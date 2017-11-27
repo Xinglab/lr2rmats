@@ -117,20 +117,24 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 ## <a name="FAQ"></a>FAQ
 
 1. **Q**: How many samples are needed for lr2gtf?
-   **A**: No limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2gtf.
+
+   **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2gtf.
 
 2. **Q**: How to specify the directory of output and intermediate files?
-   **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative paths in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
+
+   **A**: You can use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative paths in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
    
 3. **Q**: How to use single-end short-read data as input?
-   **A**: Write single-end data file path after `first:`, and leave `second:` empty like this:
+
+   **A**: You can Write single-end data file path after `first:`, and leave `second:` empty like this:
    ```
    first: test_data/read/short_single.fa
    second: []
    ```
    
 4. **Q**: How to specify matched pairs of long and short-read data?
-   **A**: Use uniform name for data from same sample, like this:
+
+   **A**: You should use uniform name for data from same sample, like this:
    ```
    long_read:
       samp1: test_data/read/samp1_long.fa
