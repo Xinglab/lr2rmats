@@ -102,7 +102,7 @@ Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`
 ## <a name="cluster"></a>Running lr2gtf on a computer cluster
 ```
 snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-config ./config.yaml \
---cluster "qsub -cwd -V -l h_data={cluster.h_data},h_rt={cluster.h_rt} -pe shared {cluster.threads} \"
+--cluster "qsub -cwd -V -l h_data={cluster.h_data},h_rt={cluster.h_rt} -pe shared {cluster.threads}"
 ```
 Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2gtf on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
