@@ -10,7 +10,7 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
   - [Operating system](#os)
   - [Cloning and building lr2gtf pipeline](#build)
   - [Dependencies](#depen)
-- [Getting started with provided toy example in `test_data`](#start)
+- [Getting started with toy example in `test_data`](#start)
 - [Input and output](#input_output)
   - [Input files](#input)
   - [Output file](#output)
@@ -24,7 +24,7 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
 
 ## <a name="install"></a>Installation
 ### <a name="os"></a>Operating system
-lr2gtf currently can only be complied and run on Linux/Unix systems.
+lr2gtf currently can only be built and run on Linux/Unix systems.
 
 ### <a name="build"></a>Cloning and building lr2gtf pipeline
 ```
@@ -47,9 +47,9 @@ They will be automatically downloaded and built via `make dependencies` command 
 You can choose to build them separately, like `make minimap2`, `make snakemake`.
 
 
-## <a name="start"></a>Getting started with provided toy example in `test_data`
+## <a name="start"></a>Getting started with toy example in `test_data`
 ```
-snakemake -p --configfile ./config.yaml updated.gtf
+snakemake -p --snakefile ./Snakefile --configfile ./config.yaml updated.gtf
 ``` 
 Enhanced gene annotation file `updated.gtf` will be generated in current working directory, along with some intermediate and log files.
 
@@ -104,7 +104,7 @@ Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`
 snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-config ./config.yaml \
 --cluster "qsub -cwd -V -l h_data={cluster.h_data},h_rt={cluster.h_rt} -pe shared {cluster.threads} \"
 ```
-Computing jobs will be automatically submitted to the computer cluster. Allocation information are also specified in `config.yaml`. For more details about how to run lr2gtf on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
+Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2gtf on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
 1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
@@ -117,22 +117,19 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 ## <a name="FAQ"></a>FAQ
 
 1. **Q**: How many samples are needed for lr2gtf?
-
-   **A**: No limit on sample size. As long as one sample has matched long & short-read data, it can be provided to lr2gtf.
+   **A**: No limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2gtf.
 
 2. **Q**: How to specify the directory of output and intermediate files?
-   **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative path in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
+   **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative paths in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
    
-3. **Q**: How to specify single-end short-read data in the configuration file?
-
-   **A**: Write single-end data file path after `first:` and leave `second:` empty like this:
+3. **Q**: How to use single-end short-read data as input?
+   **A**: Write single-end data file path after `first:`, and leave `second:` empty like this:
    ```
    first: test_data/read/short_single.fa
    second: []
    ```
    
-4. **Q**: How to specify that long and short-read data match with each other?
-
+4. **Q**: How to specify matched pairs of long and short-read data?
    **A**: Use uniform name for data from same sample, like this:
    ```
    long_read:
