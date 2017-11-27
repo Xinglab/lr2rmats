@@ -15,8 +15,8 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
   - [Input files](#input)
   - [Output file](#output)
   - [Intermediate and log files](#intermediate)
-- [Running lr2gtf on local machine](#local)
-- [Running lr2gtf on computer cluster](#cluster)
+- [Running lr2gtf on a local machine](#local)
+- [Running lr2gtf on a computer cluster](#cluster)
 - [More about `snakemake` and configuration file](#snakemake)
 - [FAQ](#FAQ)
 - [Contact](#contact)
@@ -26,16 +26,18 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
 ### <a name="os"></a>Operating system
 lr2gtf currently can only be complied and run on Linux/Unix systems.
 
-### <a name="build"></a>Clone and build lr2gtf pipeline
+### <a name="build"></a>Cloning and building lr2gtf pipeline
 ```
 git clone https://github.com/Xinglab/lr2gtf.git --recursive
 cd lr2gtf
 make dependencies
 make lr2gtf
 ```
-`make dependencies` command will build all dependencies that are needed by lr2gtf. `make lr2gtf` will build main program of lr2gtf pipeline. Or, you could simply type `make` to build everything you need.
+`make dependencies` command will build all dependencies that are needed by lr2gtf. `make lr2gtf` will build the main program of the lr2gtf pipeline. 
 
-After building is done, path of `lr2gtf/bin` needs to be add to the environment variable PATH.
+Alternatively, you could simply type `make` to build everything you need.
+
+After the building is done, the path of `lr2gtf/bin` needs to be added to the environment variable PATH.
 
 ### <a name="depen"></a>Dependencies 
 lr2gtf is dependent on following open-source software: [minimap2](https://github.com/lh3/minimap2), [STAR](https://github.com/alexdobin/STAR), [samtools](https://github.com/samtools/samtools) and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
@@ -79,10 +81,10 @@ output:
 
 `samp1_long.fa` is long-read data of sample #1.
  
-`samp1_short_1.fa` and `samp1_short_2.fa` are paired-end short-read data of sample #1 
+`samp1_short_1.fa` and `samp1_short_2.fa` are paired-end short-read data of sample #1.
 
 ### <a name="output"></a>Output file
-`updated.gtf` is the generated enhanced gene annotation file, which contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long- and short-read data.
+`updated.gtf` is the generated enhanced gene annotation file, which contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
 
 ### <a name="intermediate"></a>Intermediate and log files
 Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`, and `benchmark`.
@@ -91,23 +93,23 @@ Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`
 * `logs` contains the log file of each job.
 * `benchmark` contains each job's running time, memory usage and other measurements.
 
-## <a name="local"></a>Running lr2gtf on local machine
+## <a name="local"></a>Running lr2gtf on a local machine
 `snakemake -p --snakefile ./Snakefile --configfile ./config.yaml --jobs 8`
 
-8 threads will be used in parallel on the local machine. For more details about how to run lr2gtf on local machine, refer to [More about `snakemake` and configuration file](#snakemake).
+8 threads will be used in parallel on the local machine. For more details about how to run lr2gtf on a local machine, refer to [More about `snakemake` and configuration file](#snakemake).
 
  
-## <a name="cluster"></a>Running lr2gtf on computer cluster
+## <a name="cluster"></a>Running lr2gtf on a computer cluster
 ```
 snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-config ./config.yaml \
 --cluster "qsub -cwd -V -l h_data={cluster.h_data},h_rt={cluster.h_rt} -pe shared {cluster.threads} \"
 ```
-Computing jobs will be automatically submitted to the computer cluster. Allocation information are also specified in `config.yaml`. For more details about how to run lr2gtf on computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
+Computing jobs will be automatically submitted to the computer cluster. Allocation information are also specified in `config.yaml`. For more details about how to run lr2gtf on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
-1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as origin.
-2. Maximum cores to be used on local machine or computer cluster could be specified with `snakemake` argument `--jobs` (`--cores`, `-j`).
-3. Computing resources for each job could be set in configuration file. 
+1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
+2. Maximum cores to be used on a local machine or computer cluster could be specified with `snakemake` argument `--jobs` (`--cores`, `-j`).
+3. Computing resources for each job could be set in the configuration file. 
     * `h_data`: memory size
     * `h_rt`: running time
     * `threads`: multi-threads
@@ -119,9 +121,9 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
    **A**: No limit on sample size. As long as one sample has matched long & short-read data, it can be provided to lr2gtf.
 
 2. **Q**: How to specify the directory of output and intermediate files?
-   **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative path in configuration file will use it as origin. Or, you could just use absolute path instead.
+   **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative path in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
    
-3. **Q**: How to specify single-end short-read data in configuration file?
+3. **Q**: How to specify single-end short-read data in the configuration file?
 
    **A**: Write single-end data file path after `first:` and leave `second:` empty like this:
    ```
