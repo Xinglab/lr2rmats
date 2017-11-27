@@ -126,7 +126,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
    
 3. **Q**: How to use single-end short-read data as input?
 
-   **A**: You can Write single-end data file path after `first:`, and leave `second:` empty like this:
+   **A**: You can write single-end data file path after `first:`, and leave `second:` empty like this:
    ```
    first: test_data/read/short_single.fa
    second: []
