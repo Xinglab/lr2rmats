@@ -5,10 +5,10 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
 
 ## Table of Contents
 
-- [What is lr2gtf](#lr2gtf)
+- [What is lr2gtf ?](#lr2gtf)
 - [Installation](#install)
   - [Operating system](#os)
-  - [Clone and build lr2gtf pipeline](#build)
+  - [Cloning and building lr2gtf pipeline](#build)
   - [Dependencies](#depen)
 - [Getting started with provided toy example in `test_data`](#start)
 - [Input and output](#input_output)
@@ -111,7 +111,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
    **A**: No limit on sample size. As long as one sample has matched long & short-read data, it can be provided to lr2gtf.
 
-2. **Q**: How to specify directory of output and intermediate files?
+2. **Q**: How to specify the directory of output and intermediate files?
    **A**: Use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative path in configuration file will use it as origin. Or, you could just use absolute path instead.
    
 3. **Q**: How to specify single-end short-read data in configuration file?
@@ -124,7 +124,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
    
 4. **Q**: How to specify that long and short-read data match with each other?
 
-   **A**: Use one same name for data from the same sample, like this:
+   **A**: Use uniform name for data from same sample, like this:
    ```
    long_read:
       samp1: test_data/read/samp1_long.fa
@@ -137,7 +137,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
            first: test_data/read/samp2_short_single.fa
            second: []
    ```
-   Here `samp1` and `samp2` are the names for two samples, they should be consistent in `long_read` and `short_read`. 
+   Here `samp1` and `samp2` are the names of two samples, they should be consistent in `long_read` and `short_read`. 
 
 
 ## <a name="contact"></a>Contact
