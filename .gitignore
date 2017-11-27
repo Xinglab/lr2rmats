@@ -10,6 +10,7 @@
 benchmark/*
 alignment/*
 gtf/*
+logs/*
 
 
 # Precompiled Headers

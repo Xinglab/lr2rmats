@@ -22,49 +22,66 @@ DMARCRO 	=	-D __DEBUG__
 MINIMAP2  = minimap2
 STAR      = STAR
 SNAKEMAKE = snakemake
+PSUTIL    = psutil
 SAMTOOLS  = samtools
+MINIMAP2_VERSION = 2.5
+STAR_VERSION = 2.5.3a
+SAMTOOLS_VERSION = 1.6
 
 .c.o:
 		$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-all:		$(HTSLIB) $(BIN) 
-lr2gtf:     $(BIN)
+all:		$(HTSLIB) $(BIN)  $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR)
+lr2gtf:     $(HTSLIB) $(BIN)
 gdb_lr2gtf: $(SOURCE) $(GDB_DEBUG) 
 dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 
 
 $(SNAKEMAKE):
 	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	if [ -z ${shell which ${SNAKEMAKE}} ]; then \
-		git clone https://bitbucket.org/snakemake/snakemake.git && cd snakemake; \
-		python3 setup.py install --user; cd ..; \
-		rm -rf snakemake; \
+		python3 -m pip install --user $(SNAKEMAKE) $(PSUTIL); \
+		else echo "$(SNAKEMAKE) is already installed."; \
 		fi
 
 $(SAMTOOLS):
-	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
-	if [ ! -f ${BIN_DIR}/${SAMTOOLS} ]; then \
-		wget https://github.com/samtools/samtools/releases/download/1.6/samtools-1.6.tar.bz2; \
-		tar -jxvf samtools-1.6.tar.bz2; \
-		cd ./samtools-1.6/ && make; cp ${SAMTOOLS} ../${BIN_DIR}; cd .. ; \
-		rm -rf samtools-1.6.tar.bz2 ./samtools-1.6; \
+	if [ -z ${shell which ${SAMTOOLS}} ]; then \
+		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${SAMTOOLS} ]; then \
+		wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2; \
+		tar -jxvf samtools-${SAMTOOLS_VERSION}.tar.bz2; \
+		cd ./samtools-${SAMTOOLS_VERSION}/htslib-${SAMTOOLS_VERSION}/ && ./configure --disable-bz2 --disable-lzma; make; \
+		cd ..; ./configure --with-htslib=./htslib-${SAMTOOLS_VERSION}; make; \
+		cp ${SAMTOOLS} ../${BIN_DIR}; cd .. ; \
+		rm -rf samtools-${SAMTOOLS_VERSION}.tar.bz2 ./samtools-${SAMTOOLS_VERSION}; \
+		else echo "$(SAMTOOLS) is already installed."; \
+		fi; \
+		else echo "$(SAMTOOLS) is already installed."; \
 		fi
 
 $(MINIMAP2):
-	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
-	if [ ! -f ${BIN_DIR}/${MINIMAP2} ]; then \
-		wget https://github.com/lh3/minimap2/releases/download/v2.5/minimap2-2.5_x64-linux.tar.bz2; \
-		tar -xjf minimap2-2.5_x64-linux.tar.bz2 || exit 255; \
-		cp ./minimap2-2.5_x64-linux/minimap2 ${BIN_DIR}; \
-		rm -rf minimap2-2.5_x64-linux.tar.bz2 ./minimap2-2.5_x64-linux; \
+	if [ -z ${shell which ${MINIMAP2}} ]; then \
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${MINIMAP2} ]; then \
+		wget https://github.com/lh3/minimap2/releases/download/v${MINIMAP2_VERSION}/minimap2-${MINIMAP2_VERSION}_x64-linux.tar.bz2; \
+		tar -xjf minimap2-${MINIMAP2_VERSION}_x64-linux.tar.bz2 || exit 255; \
+		cp ./minimap2-${MINIMAP2_VERSION}_x64-linux/minimap2 ${BIN_DIR}; \
+		rm -rf minimap2-${MINIMAP2_VERSION}_x64-linux.tar.bz2 ./minimap2-${MINIMAP2_VERSION}_x64-linux; \
+		else echo "$(MINIMAP2) is already installed."; \
+		fi; \
+		else echo "$(MINIMAP2) is already installed."; \
 		fi
 
 $(STAR):
-	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
-	if [ ! -f ${BIN_DIR}/${STAR} ]; then \
-		wget https://github.com/alexdobin/STAR/archive/2.5.3a.tar.gz; \
-		tar -xzf 2.5.3a.tar.gz || exit 255; \
-		cp ./STAR-2.5.3a/bin/Linux_x86_64/STAR ${BIN_DIR}; \
-		rm -rf 2.5.3a.tar.gz ./STAR-2.5.3a; \
+	if [ -z ${shell which ${STAR}} ]; then \
+		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${STAR} ]; then \
+		wget https://github.com/alexdobin/STAR/archive/${STAR_VERSION}.tar.gz; \
+		tar -xzf ${STAR_VERSION}.tar.gz || exit 255; \
+		cp ./STAR-${STAR_VERSION}/bin/Linux_x86_64/STAR ${BIN_DIR}; \
+		rm -rf ${STAR_VERSION}.tar.gz ./STAR-${STAR_VERSION}; \
+		else echo "$(STAR) is already installed."; \
+		fi; \
+		else echo "$(STAR) is already installed."; \
 		fi
 
 

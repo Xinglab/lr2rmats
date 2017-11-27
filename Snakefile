@@ -10,13 +10,15 @@ rule star_idx:
         config["genome"]["star_idx"]
     threads:
         config["star_idx"]["threads"]
+    log:
+        "logs/star_idx"
     benchmark:
         "benchmark/star_idx.benchmark.txt"
     params:
         star=config["exe_files"]["star"]
     shell:
         "mkdir {output}; "
-        "{params.star} --runMode genomeGenerate --runThreadN {threads} --genomeFastaFiles {input} --genomeDir {output}"
+        "{params.star} --runMode genomeGenerate --runThreadN {threads} --genomeFastaFiles {input} --genomeDir {output} --outFileNamePrefix {log} >> ${log}"
 
 # minimap build index file
 rule minimap_idx:
@@ -26,12 +28,14 @@ rule minimap_idx:
         config["genome"]["minimap_idx"]
     threads:
         config["minimap_idx"]["threads"]
+    log:
+        "logs/minimap_idx.log"
     benchmark:
         "benchmark/minimap_idx.benchmark.txt"
     params:
         minimap=config["exe_files"]["minimap2"]
     shell:
-        "{params.minimap} -x splice {input} -d {output} -t {threads}"
+        "{params.minimap} -x splice {input} -d {output} -t {threads} 2> {log}"
 
 
 # minimap mapping for long reads
@@ -43,12 +47,14 @@ rule minimap_map:
         "alignment/{sample}.minimap.sam"
     threads:
         config["minimap_map"]["threads"]
+    log:
+        "logs/minimap_map/{sample}.log"
     benchmark:
         "benchmark/{sample}.minimap.benchmark.txt"
     params:
         minimap=config["exe_files"]["minimap2"]
     shell:
-        "{params.minimap} -ax splice -ub -t {threads} {input.genome} {input.reads} > {output}"
+        "{params.minimap} -ax splice -ub -t {threads} {input.genome} {input.reads} > {output} 2> {log}"
 
 # filter long read alignment and generate novel GTF file
 rule sam_novel_gtf:
@@ -60,13 +66,15 @@ rule sam_novel_gtf:
         "gtf/{sample}_sam_novel.gtf"
     threads:
         config["novel_gtf"]["threads"]
+    log:
+        "logs/sam_novel_gtf/{sample}.log"
     benchmark:
         "benchmark/{sample}.novel_gtf.benchmark.txt"
     params:
         lr2gtf=config["exe_files"]["lr2gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2gtf} filter {input.sam} {input.rRNA} | {params.samtools} sort -@ {threads} | {params.lr2gtf} update-gtf - {input.gtf} > {output}"
+        "{params.lr2gtf} filter {input.sam} {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2gtf} update-gtf - {input.gtf} 2>> {log} > {output}"
 
 # merge and sort gtf
 rule new_gtf:
@@ -76,52 +84,58 @@ rule new_gtf:
     output:
         tmp=temp("gtf/{sample}_tmp.gtf"),
         gtf="gtf/{sample}_new.gtf"
+    log:
+        "logs/new_gtf/{sample}.log"
     benchmark:
         "benchmark/{sample}_new_gtf.benchmark.txt"
     params:
         sort_gtf=config["exe_files"]["sort_gtf"]
     shell:
-        "cp {input.gtf} {output.tmp}; "
-        "cat {input.novel_gtf} >> {output.tmp}; "
-        "{params.sort_gtf} {output.tmp} {output.gtf}; "
+        "cp {input.gtf} {output.tmp} 2> {log}; "
+        "cat {input.novel_gtf} >> {output.tmp} 2> {log}; "
+        "{params.sort_gtf} {output.tmp} {output.gtf} 2>> {log}; "
 
 
 # STAR mapping for short reads
-rule star_new_map:
+rule star_map:
     input:
         genome=config["genome"]["star_idx"],
         gtf="gtf/{sample}_new.gtf",
         read1=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["first"],
         read2=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["second"]
     output:
-        bam="alignment/{sample}.new.STAR.sort.bam",
-        SJ="alignment/{sample}.new.STARSJ.out.tab"
+        bam="alignment/{sample}.STAR.sort.bam",
+        SJ="alignment/{sample}.STARSJ.out.tab"
     threads:
-        config["star_new_map"]["threads"]
+        config["star_map"]["threads"]
+    log:
+        "logs/star_map/{sample}.log"
     benchmark:
-        "benchmark/{sample}.star.new.benchmark.txt"
+        "benchmark/{sample}.star.benchmark.txt"
     params:
         star=config["exe_files"]["star"],
         samtools=config["exe_files"]["samtools"],
         prefix="alignment/{sample}",
-        b="alignment/{sample}.new.STAR.sort.bam.txt"
+        b="alignment/{sample}.STAR.sort.bam.txt"
     shell:
         "{params.star} --runThreadN {threads}  --genomeDir {input.genome} --readFilesIn {input.read1} {input.read2} "
-        "--outFileNamePrefix {params.prefix}.new.STAR --outSAMtype BAM Unsorted "
+        "--outFileNamePrefix {params.prefix}.STAR --outSAMtype BAM Unsorted "
         "--outFilterType BySJout   --outFilterMultimapNmax 20 "
         "--outFilterMismatchNmax 999   --alignIntronMin 25   --alignIntronMax 1000000   --alignMatesGapMax 1000000 "
-        "--alignSJoverhangMin 8   --alignSJDBoverhangMin 5   --sjdbGTFfile {input.gtf}  --sjdbOverhang 100 ; "
-        "{params.samtools} sort {params.prefix}.new.STARAligned.out.bam -@ {threads} > {output.bam} ;"
+        "--alignSJoverhangMin 8   --alignSJDBoverhangMin 5   --sjdbGTFfile {input.gtf}  --sjdbOverhang 100 > {log} 2 >& 1; "
+        "{params.samtools} sort {params.prefix}.STARAligned.out.bam -@ {threads} > {output.bam} 2>> {log};"
         "ls -1 {output.bam} > {params.b}"
 
 rule gtf_novel_gtf:
     input:
         gtf=config["genome"]["gtf"],
         novel_gtf="gtf/{sample}_sam_novel.gtf",
-        bam="alignment/{sample}.new.STAR.sort.bam",
-        SJ="alignment/{sample}.new.STARSJ.out.tab"
+        bam="alignment/{sample}.STAR.sort.bam",
+        SJ="alignment/{sample}.STARSJ.out.tab"
     output:
         "gtf/{sample}_gtf_novel.gtf"
+    log:
+        "logs/gtf_novel_gtf/{sample}.log"
     benchmark:
         "benchmark/{sample}_gtf_novel_gtf.benchmark.txt"
     params:
@@ -129,7 +143,7 @@ rule gtf_novel_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2gtf} update-gtf -mg -b {input.bam} -I {input.SJ} {input.novel_gtf} {input.gtf} > {output}"
+        "{params.lr2gtf} update-gtf -mg -b {input.bam} -I {input.SJ} {input.novel_gtf} {input.gtf} > {output} 2> {log}"
 
 rule update_gtf:
     input:
@@ -137,6 +151,8 @@ rule update_gtf:
         novel_gtf=expand("gtf/{sample}_gtf_novel.gtf", sample=config["sample"]["long_read"])
     output:
         config["output"]["gtf"]
+    log:
+        "logs/update_gtf.log"
     benchmark:
         "benchmark/update_gtf.benchmark.txt"
     params:
@@ -144,7 +160,7 @@ rule update_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "cp {input.gtf} gtf/tmp.gtf; "
-        "cat {input.novel_gtf} >> gtf/tmp.gtf; "
-        "{params.sort_gtf} gtf/tmp.gtf {output}; rm gtf/tmp.gtf"
+        "cp {input.gtf} gtf/tmp.gtf 2> {log}; "
+        "cat {input.novel_gtf} >> gtf/tmp.gtf 2> {log}; "
+        "{params.sort_gtf} gtf/tmp.gtf {output} 2>> {log}; rm gtf/tmp.gtf"
 

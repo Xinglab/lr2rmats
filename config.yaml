@@ -24,7 +24,7 @@ sample:
 # specify path of output file
 # RELATIVE PATH here will use working directory as their origin).
 output:
-    gtf: updated.gtf # updated GTF file name
+    gtf: updated.gtf # file name of updated GTF
 
 # add all execuatable files to PATH, or put their ABSOLUTE paths here
 exe_files:
@@ -45,7 +45,7 @@ star_idx:
     h_rt: 02:00:00
     threads: 8
 
-star_new_map:
+star_map:
     h_data: 4G
     h_rt: 02:00:00
     threads: 8
