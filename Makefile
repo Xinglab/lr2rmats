@@ -27,17 +27,13 @@ SAMTOOLS  = samtools
 .c.o:
 		$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-all:		$(HTS_LIB) $(BIN) 
+all:		$(HTSLIB) $(BIN) 
 lr2gtf:     $(BIN)
 gdb_lr2gtf: $(SOURCE) $(GDB_DEBUG) 
-dependendcies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 
-
-$(BIN): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(LIB)
-	cp $(SRC_DIR)/$(SORT) $(BIN_DIR) 2> /dev/null
-
+dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 
 
 $(SNAKEMAKE):
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	if [ -z ${shell which ${SNAKEMAKE}} ]; then \
 		git clone https://bitbucket.org/snakemake/snakemake.git && cd snakemake; \
 		python3 setup.py install --user; cd ..; \
@@ -45,6 +41,7 @@ $(SNAKEMAKE):
 		fi
 
 $(SAMTOOLS):
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	if [ ! -f ${BIN_DIR}/${SAMTOOLS} ]; then \
 		wget https://github.com/samtools/samtools/releases/download/1.6/samtools-1.6.tar.bz2; \
 		tar -jxvf samtools-1.6.tar.bz2; \
@@ -53,6 +50,7 @@ $(SAMTOOLS):
 		fi
 
 $(MINIMAP2):
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	if [ ! -f ${BIN_DIR}/${MINIMAP2} ]; then \
 		wget https://github.com/lh3/minimap2/releases/download/v2.5/minimap2-2.5_x64-linux.tar.bz2; \
 		tar -xjf minimap2-2.5_x64-linux.tar.bz2 || exit 255; \
@@ -61,6 +59,7 @@ $(MINIMAP2):
 		fi
 
 $(STAR):
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	if [ ! -f ${BIN_DIR}/${STAR} ]; then \
 		wget https://github.com/alexdobin/STAR/archive/2.5.3a.tar.gz; \
 		tar -xzf 2.5.3a.tar.gz || exit 255; \
@@ -69,10 +68,17 @@ $(STAR):
 		fi
 
 
-$(HTS_LIB):
+$(HTSLIB):
 	cd $(HTSLIB_DIR); make;
 
+$(BIN): $(OBJS)
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
+	$(CC) $(OBJS) -o $@ $(LIB)
+	cp $(SRC_DIR)/$(SORT) $(BIN_DIR) 2> /dev/null
+
+
 $(GDB_DEBUG):
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 	$(CC) $(DFLAGS) $(SOURCE) $(DMARCRO) $(INCLUDE) -o $@ $(LIB)
 
 clean:

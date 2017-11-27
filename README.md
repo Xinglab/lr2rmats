@@ -29,17 +29,17 @@ lr2gtf currently can only be complied and run on Linux/Unix systems.
 ```
 git clone https://github.com/Xinglab/lr2gtf.git --recursive
 cd lr2gtf
-make dependendcies
+make dependencies
 make
 ```
-`make dependendcies` command will build all dependencies that are needed by lr2gtf. `make` will build main program of lr2gtf pipeline.
+`make dependencies` command will build all dependencies that are needed by lr2gtf. `make` will build main program of lr2gtf pipeline.
 
 After building is done, path of `lr2gtf/bin` needs to be add to the environment variable PATH.
 
 ### <a name="depen"></a>Dependencies 
 lr2gtf is dependent on following open-source software: [minimap2](https://github.com/lh3/minimap2), [STAR](https://github.com/alexdobin/STAR), [samtools](https://github.com/samtools/samtools) and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
 
-They will be automatically downloaded and built via `make dependendcies` command in above section.
+They will be automatically downloaded and built via `make dependencies` command in above section.
 
 If some of them are already installed in your machine, you can choose to only build one of them separately, like `make minimap2` or `make snakemake`.
 
