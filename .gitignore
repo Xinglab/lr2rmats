@@ -1,16 +1,16 @@
-# Prerequisites
-*.d
-
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
+.idea/*
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# Snakemake
+.snakemake
+benchmark/*
+alignment/*
+gtf/*
+
 
 # Precompiled Headers
 *.gch
@@ -22,6 +22,7 @@
 *.la
 *.lo
 
+
 # Shared objects (inc. Windows DLLs)
 *.dll
 *.so
@@ -29,6 +30,9 @@
 *.dylib
 
 # Executables
+lr2gtf
+gdb_lr2gtf
+bin/*
 *.exe
 *.out
 *.app
@@ -39,14 +43,10 @@
 # Debug files
 *.dSYM/
 *.su
-*.idb
-*.pdb
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+#data
+data/*
+
+#tags
+tags
+cscope.*

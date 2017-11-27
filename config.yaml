@@ -1,0 +1,66 @@
+# specify path of input files
+# RELATIVE PATH here will use working directory as their origin).
+genome:
+    fasta: test_data/genome/genome.fa
+    gtf: test_data/gtf/original.gtf
+    rRNA: test_data/gtf/rRNA.gtf
+    # specify existing index file if they are alread built
+    # lr2gtf will build them if they do not exist
+    minimap_idx: test_data/genome/genome.fa.smmi
+    star_idx: test_data/genome/genome.STAR
+
+sample:
+    long_read:
+        samp1: test_data/read/samp1_long.fa
+        #samp2: test_data/read/samp2_long.fa
+    short_read: # if short-read is single-end, just leave `second` empty, like `second: [] `
+        samp1: 
+            first: test_data/read/samp1_short_1.fa 
+            second: test_data/read/samp1_short_2.fa
+        #samp2: 
+            #first: test_data/read/samp2_short_single.fa 
+            #second: []
+
+# specify path of output file
+# RELATIVE PATH here will use working directory as their origin).
+output:
+    gtf: updated.gtf # updated GTF file name
+
+# add all execuatable files to PATH, or put their ABSOLUTE paths here
+exe_files:
+    samtools: samtools
+    minimap2: minimap2
+    star: STAR
+    lr2gtf: lr2gtf
+    sort_gtf: sort_gtf.sh
+
+# allocate computing resource
+__default__:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 8
+
+star_idx:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 8
+
+star_new_map:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 8
+
+novel_gtf:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 1
+
+minimap_idx:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 8
+
+minimap_map:
+    h_data: 4G
+    h_rt: 02:00:00
+    threads: 8

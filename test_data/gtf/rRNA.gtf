@@ -1,0 +1,2 @@
+chr1	ENSEMBL	transcript	9497728	9497837	.	-	.	gene_id "ENSG00000252956.1"; transcript_id "ENST00000517147.1"; gene_type "rRNA"; gene_status "KNOWN"; gene_name "RNA5SP40"; transcript_type "rRNA"; transcript_status "KNOWN"; transcript_name "RNA5SP40-201"; level 3; tag "basic";
+chr1	ENSEMBL	exon	9497728	9497837	.	-	.	gene_id "ENSG00000252956.1"; transcript_id "ENST00000517147.1"; gene_type "rRNA"; gene_status "KNOWN"; gene_name "RNA5SP40"; transcript_type "rRNA"; transcript_status "KNOWN"; transcript_name "RNA5SP40-201"; exon_number 1;  level 3; tag "basic";
