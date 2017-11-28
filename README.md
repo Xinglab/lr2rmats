@@ -94,7 +94,7 @@ Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`
 * `benchmark` contains each job's running time, memory usage and other measurements.
 
 ## <a name="local"></a>Running lr2gtf on a local machine
-`snakemake -p --snakefile ./Snakefile --configfile ./config.yaml --jobs 8`
+`snakemake -p --snakefile ./Snakefile --configfile ./config.yaml --cores 8`
 
 8 threads will be used in parallel on the local machine. For more details about how to run lr2gtf on a local machine, refer to [More about `snakemake` and configuration file](#snakemake).
 
@@ -108,11 +108,11 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
 1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
-2. Maximum cores to be used on a local machine or computer cluster could be specified with `snakemake` argument `--jobs` (`--cores`, `-j`).
+2. Maximum number of cores to be used on a local machine and number of cluster nodes to be used on a computer cluster could be specified with `snakemake` argument `--jobs`(`--cores`, `-j`).
 3. Computing resources for each job could be set in the configuration file. 
     * `h_data`: memory size
     * `h_rt`: running time
-    * `threads`: multi-threads
+    * `threads`: number of threads
 
 ## <a name="FAQ"></a>FAQ
 
