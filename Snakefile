@@ -74,7 +74,7 @@ rule sam_novel_gtf:
         lr2gtf=config["exe_files"]["lr2gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2gtf} filter {input.sam} {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2gtf} update-gtf - {input.gtf} 2>> {log} > {output}"
+        "{params.lr2gtf} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2gtf} update-gtf - {input.gtf} 2>> {log} > {output}"
 
 # merge and sort gtf
 rule new_gtf:
@@ -104,7 +104,7 @@ rule star_map:
         read1=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["first"],
         read2=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["second"]
     output:
-        bam="alignment/{sample}.STAR.sort.bam",
+        bam="alignment/{sample}.STARAligned.out.bam",
         SJ="alignment/{sample}.STARSJ.out.tab"
     threads:
         config["star_map"]["threads"]
@@ -115,22 +115,20 @@ rule star_map:
     params:
         star=config["exe_files"]["star"],
         samtools=config["exe_files"]["samtools"],
-        prefix="alignment/{sample}",
-        b="alignment/{sample}.STAR.sort.bam.txt"
+        prefix="alignment/{sample}"
     shell:
         "{params.star} --runThreadN {threads}  --genomeDir {input.genome} --readFilesIn {input.read1} {input.read2} "
         "--outFileNamePrefix {params.prefix}.STAR --outSAMtype BAM Unsorted "
         "--outFilterType BySJout   --outFilterMultimapNmax 20 "
         "--outFilterMismatchNmax 999   --alignIntronMin 25   --alignIntronMax 1000000   --alignMatesGapMax 1000000 "
         "--alignSJoverhangMin 8   --alignSJDBoverhangMin 5   --sjdbGTFfile {input.gtf}  --sjdbOverhang 100 > {log} 2 >& 1; "
-        "{params.samtools} sort {params.prefix}.STARAligned.out.bam -@ {threads} > {output.bam} 2>> {log};"
         "ls -1 {output.bam} > {params.b}"
 
 rule gtf_novel_gtf:
     input:
         gtf=config["genome"]["gtf"],
         novel_gtf="gtf/{sample}_sam_novel.gtf",
-        bam="alignment/{sample}.STAR.sort.bam",
+        bam="alignment/{sample}.STARAligned.out.bam",
         SJ="alignment/{sample}.STARSJ.out.tab"
     output:
         "gtf/{sample}_gtf_novel.gtf"
@@ -163,4 +161,3 @@ rule update_gtf:
         "cp {input.gtf} gtf/tmp.gtf 2> {log}; "
         "cat {input.novel_gtf} >> gtf/tmp.gtf 2> {log}; "
         "{params.sort_gtf} gtf/tmp.gtf {output} 2>> {log}; rm gtf/tmp.gtf"
-

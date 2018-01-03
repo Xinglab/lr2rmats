@@ -14,6 +14,8 @@ OBJS    =	$(SOURCE:.c=.o)
 
 BIN     =	$(BIN_DIR)/lr2gtf
 SORT 	=   sort_gtf.sh
+GTF2GP  =   gtfToGenePred
+GP2BED  =   genePredToBed
 
 GDB_DEBUG   =   $(BIN_DIR)/gdb_lr2gtf
 DMARCRO 	=	-D __DEBUG__
@@ -31,8 +33,8 @@ SAMTOOLS_VERSION = 1.6
 .c.o:
 		$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-all:		$(HTSLIB) $(BIN)  $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR)
-lr2gtf:     $(HTSLIB) $(BIN)
+all:		$(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)  $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR)
+lr2gtf:     $(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)
 gdb_lr2gtf: $(SOURCE) $(GDB_DEBUG) 
 dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 
 
@@ -84,9 +86,32 @@ $(STAR):
 		else echo "$(STAR) is already installed."; \
 		fi
 
+$(GTF2GP):
+	if [ -z ${shell which ${GTF2GP}} ]; then \
+		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${GTF2GP} ]; then \
+		wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/${GTF2GP}\
+		mv ./$(GTF2GP) ${BIN_DIR}; \
+		else echo "$(GTF2GP) is already installed."; \
+		fi; \
+		else echo "$(GTF2GP) is already installed."; \
+		fi
+
+$(GP2BED):
+	if [ -z ${shell which ${GP2BED}} ]; then \
+		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${GP2BED} ]; then \
+		wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/${GP2BED}\
+		mv ./$(GP2BED) ${BIN_DIR}; \
+		else echo "$(GP2BED) is already installed."; \
+		fi; \
+		else echo "$(GP2BED) is already installed."; \
+		fi
+
 
 $(HTSLIB):
 	cd $(HTSLIB_DIR); make;
+
 
 $(BIN): $(OBJS)
 	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi

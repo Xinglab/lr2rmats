@@ -3,6 +3,7 @@
 #include <string.h>
 #include "utils.h"
 #include "bam_filter.h"
+#include "bam_fusion.h"
 #include "update_gtf.h"
 #include "bam2gtf.h"
 #include "parse_bam.h"
@@ -10,7 +11,7 @@
 const char PROG[20] = "lr2gtf";
 const char VERSION[20] = "1.0.0";
 const char DATE[20] = "2017-11-22";
-const char CONTACT[20] = "yangao@ucla.edu";
+const char CONTACT[30] = "yangaoucla@gmail.com";
 
 
 static int usage(void)
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
 	if (argc < 2) return usage();
 
     if (strcmp(argv[1], "filter") == 0) return bam_filter(argc-1, argv+1);
+    else if (strcmp(argv[1], "fusion") == 0) return bam_fusion(argc-1, argv+1);
 	else if (strcmp(argv[1], "update-gtf") == 0) return update_gtf(argc-1, argv+1);
 	else if (strcmp(argv[1], "bam2gtf") == 0) return bam2gtf(argc-1, argv+1);
     else if (strcmp(argv[1], "bam2sj") == 0) return bam2sj(argc-1, argv+1);

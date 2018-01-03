@@ -18,12 +18,12 @@ typedef struct {
     int32_t start, end; //1-based, ref
                         //0: start of init exon
                         //MAX: end of term exon
-    int sg_node_id;
+    //int sg_node_id;
 } exon_t;
 
 typedef struct {
     int32_t tid; int32_t don, acc;
-    uint8_t strand:2, is_anno:2, motif:4;// strand: 0:undefined, 1:+, 2:-
+    uint8_t is_rev:1, strand:2, is_anno:2, motif:3;// strand: 0:undefined, 1:+, 2:-
     int uniq_c, multi_c, max_over;
 } sj_t;
 
@@ -38,36 +38,30 @@ typedef struct {
 
 typedef struct {
     exon_t *exon; int exon_n, exon_m;
-    uint8_t *novel_exon_map, *novel_sj_map; // 3-bit map: l-iden | r-iden | both-iden
+    //uint8_t *novel_exon_map, *novel_sj_map; // 3-bit map: l-iden | r-iden | both-iden
     int tid; uint8_t is_rev;
     int start, end;
-    char tname[100], trans_id[100];
-    char gname[100], gid[100];
-    int novel_gene_flag, cov;
-    uint8_t lfull:2, lnoth:2, rfull:2, rnoth:2;
-    uint8_t full:2, novel:2, all_novel:2, all_iden:2;
+    char trans_name[100], trans_id[100];
+    char gene_name[100], gene_id[100];
+    int cov;
+    uint8_t full:1, lfull:1, lnoth:1, rfull:1, rnoth:1;
+
+    // for read derived transcript
+    uint8_t known:1/*0*/, has_known_site:1/*0*/, has_unreliable_junction:1/*0*/, partial_read:1/*0*/;//polyA:1;
+    // list: index of exon/site/junction
+    uint8_t *novel_exon_flag/*1*/, *novel_site_flag/*1*/, *novel_junction_flag/*1*/, *unreliable_junction_flag/*0*/; //, novel_polyA;
 } trans_t;
 
 typedef struct {
-    int tid;
-    int start, end; //1-based, ref
-    uint8_t is_rev:2,is_canon:2, is_anno:4;
-    int uniq_c, multi_c;
-} intron_t;
-
-typedef struct {
-    intron_t *intron; int intron_n, intron_m;
-} intron_group_t;
-
-typedef struct {
     trans_t *t; int trans_n, trans_m;
+    int gene_n;
 } read_trans_t;
 
 typedef struct {
     trans_t *trans; int trans_n, anno_tran_n, trans_m;
     int tid; uint8_t is_rev;
     int start, end;
-    char gname[1024], gid[1024];
+    char gene_name[1024], gene_id[1024];
 } gene_t;
 
 typedef struct {
@@ -93,42 +87,33 @@ int add_exon(trans_t *t, int tid, int start, int end, uint8_t is_rev);
 void sort_exon(trans_t *t);
 int set_trans_name(trans_t *t, char *gid, char *gname, char *trans_id, char *tname);
 trans_t *exon_realloc(trans_t *t);
-void trans_free(trans_t *t);
+void trans_free(read_trans_t *t);
 
-read_trans_t *read_trans_init(void);
+read_trans_t *read_trans_init(int m);
 void add_read_trans(read_trans_t *r, trans_t t);
+void modify_read_trans(trans_t *T, trans_t t);
 read_trans_t *read_trans_realloc(read_trans_t *r);
-void novel_read_trans_free(read_trans_t *r);
+void read_trans_free1(trans_t *r);
 void read_trans_free(read_trans_t *r);
-//int set_read_trans(read_trans_t *r);
-
-intron_t *intron_init(int n);
-intron_group_t *intron_group_init(void);
-void add_intron(intron_group_t *i, intron_t i1);
-int read_intron_group(intron_group_t *I, FILE *fp);
-
-void intron_group_free(intron_group_t *i);
 
 gene_t *gene_init(void);
 gene_t *copy_gene(gene_t *g);
-void add_trans(gene_t *g, trans_t t, int novel_gene_flag);
+void add_trans(gene_t *g, trans_t t);
 gene_t *trans_realloc(gene_t *g);
 void gene_free(gene_t *g);
 void gtf_add_info(char add_info[], char tag[], char *info);
 
 gene_group_t *gene_group_init(void);
 gene_group_t *gene_group_realloc(gene_group_t *gg);
-void add_gene(gene_group_t *gg, gene_t g, int novel_gene_flag);
+void add_gene(gene_group_t *gg, gene_t g);
 void set_gene_group(gene_group_t *gg);
 void gene_group_free(gene_group_t *gg);
 int read_gene_group(char *fn, chr_name_t *cname, gene_group_t *gg);
+int read_anno_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T);
+int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T);
 
-int print_exon(exon_t e, FILE *out);
-int print_trans(trans_t t, bam_hdr_t *h, char *src, FILE *out);
-int print_read_trans(read_trans_t *anno_T, read_trans_t *novel_T, bam_hdr_t *h, char *src, FILE *out);
-void print_gene(FILE* out, char *src, gene_t *g, char **cname);
-void print_gene_group(gene_group_t gg, bam_hdr_t *h, char *src, FILE *out, char **group_line, int *group_line_n);
-void print_gtf_trans(gene_t g, bam_hdr_t *h, char *src, FILE *out);
+int print_trans(trans_t t, chr_name_t *cname, char *src, FILE *out);
+int print_read_trans(read_trans_t *novel_T, chr_name_t *cname, char *src, FILE *out);
 
 // for filtering splice-junction
 #define INTRON_MIN_LEN 3
@@ -138,6 +123,7 @@ void print_gtf_trans(gene_t g, bam_hdr_t *h, char *src, FILE *out);
 #define ANCHOR_MIN_LEN 1 // for annotated sj
 #define UNIQ_MIN 0 // for annotated sj
 #define ALL_MIN 0 // for annotated sj
+#define SING_OVLP_FRAC 0.80
 // for novel sj
 #define NON_ANCHOR 30 // non-canonical anchor-len
 #define ANCHOR1 12    // GT/AG, CT/AC anchor-len
@@ -153,7 +139,6 @@ void print_gtf_trans(gene_t g, bam_hdr_t *h, char *src, FILE *out);
 #define ALL_MIN3 1    // AT/AC, GT/AT all-map
 
 
-int check_sub_iden(trans_t *t1, trans_t *t2, int dis);
 int check_iden(trans_t *t1, trans_t *t2, int dis);
 
 #endif

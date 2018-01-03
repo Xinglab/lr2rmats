@@ -442,7 +442,7 @@ int push_exon_coor(exon_t **e, int *e_n, int *e_m, ad_t *ad) {
                 if (*e_n == *e_m) _realloc(*e, *e_m, exon_t)
                 // insert (start,end) to (*e)[ins_i]
                 if (ins_i < *e_n) memmove((*e)+ins_i+1, (*e)+ins_i, (*e_n-ins_i) * sizeof(exon_t));
-                (*e)[ins_i] = (exon_t){tid, 0, start, end, 0};
+                (*e)[ins_i] = (exon_t){tid, 0, start, end};
                 hit = 1;
                 ++(*e_n);
                 break;
@@ -453,7 +453,7 @@ int push_exon_coor(exon_t **e, int *e_n, int *e_m, ad_t *ad) {
             if (*e_n == *e_m) _realloc(*e, *e_m, exon_t)
             // insert (start,end) to (*e)[e_i+1]
             if (ins_i < *e_n) memmove((*e)+ins_i+1, (*e)+ins_i, (*e_n-ins_i) * sizeof(exon_t));
-            (*e)[ins_i] = (exon_t){tid, 0, start, end, 0};
+            (*e)[ins_i] = (exon_t){tid, 0, start, end};
             ++(*e_n);
         }
     }
@@ -500,14 +500,14 @@ exon_t *infer_exon_coor(int *infer_e_n, exon_t *e, int e_n, int *don, int don_n)
             if (don[don_i] > merged_e[m_e_i].end) break;
             else if (don[don_i] > merged_e[m_e_i].start){
                 if (s_e_n == s_e_m) _realloc(infer_e, s_e_m, exon_t)
-                infer_e[s_e_n++] = (exon_t){0, 0, start, don[don_i]-1, 0};
+                infer_e[s_e_n++] = (exon_t){0, 0, start, don[don_i]-1};
                 start = don[don_i];
                 don_i++;
             } else don_i++;
         }
 
         if (s_e_n == s_e_m) _realloc(infer_e, s_e_m, exon_t)
-        infer_e[s_e_n++] = (exon_t){0, 0, start, merged_e[m_e_i].end, 0};
+        infer_e[s_e_n++] = (exon_t){0, 0, start, merged_e[m_e_i].end};
     }
      
     *infer_e_n = s_e_n;

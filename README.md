@@ -13,7 +13,7 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
 - [Getting started with toy example in `test_data`](#start)
 - [Input and output](#input_output)
   - [Input files](#input)
-  - [Output file](#output)
+  - [Output files](#output)
   - [Intermediate and log files](#intermediate)
 - [Running lr2gtf on a local machine](#local)
 - [Running lr2gtf on a computer cluster](#cluster)
@@ -71,20 +71,32 @@ sample:
             second: test_data/read/samp1_short_2.fa
 # output
 output:
-    gtf: updated.gtf 
+    updated_gtf: output/updated.gtf
+    ucsc_known: output/ucsc_known.gff
+    ucsc_novel: output/ucsc_novel.gff
+    stats: output/stats_summary.txt
+    
 ```
 
 ### <a name="input"></a>Input files
-`genome.fa` is the genome file in FASTA format.
+`genome.fa`: genome file in FASTA format.
 
-`original.gtf` is the original existing gene annotation file, `rRNA.gtf` is the GTF file for all the ribosomal RNA.
+`original.gtf`: original existing gene annotation file.
 
-`samp1_long.fa` is long-read data of sample #1.
+`rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped.
+
+`samp1_long.fa`: long-read data of sample #1.
  
-`samp1_short_1.fa` and `samp1_short_2.fa` are paired-end short-read data of sample #1.
+`samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1.
 
-### <a name="output"></a>Output file
-`updated.gtf` is the generated enhanced gene annotation file, which contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
+### <a name="output"></a>Output files
+`updated.gtf`: enhanced gene annotation file. It contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
+
+`ucsc_known.gff` and `ucsc_novel.gff`: custom tracks of known and novel transcripts which are ready for UCSC genome browser visualization.
+
+`stats_summary.txt`: summary statistics of the whole pipeline. It includes number of long-read derived novel transcripts, novel exons, novel splice sites and so on. 
+
+""
 
 ### <a name="intermediate"></a>Intermediate and log files
 Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`, and `benchmark`.
@@ -120,11 +132,15 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
    **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2gtf.
 
-2. **Q**: How to specify the directory of output and intermediate files?
+2. **Q**: Do I need to provide read data in FASTA format?
+
+   **A**: lr2gtf works with FASTA, FASTQ, gzip'd FASTA(.fa.gz) and gzip'd FASTQ(.fq.gz) formats. 
+   
+3. **Q**: How to specify the directory of output and intermediate files?
 
    **A**: You can use `snakemake` argument `--directory`(`-d`) to specify working directory. Note that when working directory is set, all the relative paths in the configuration file will use it as the origin. Or, you could just use the absolute path instead.
    
-3. **Q**: How to use single-end short-read data as input?
+4. **Q**: How to use single-end short-read data as input?
 
    **A**: You can write single-end data file path after `first:`, and leave `second:` empty like this:
    ```
@@ -132,7 +148,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
    second: []
    ```
    
-4. **Q**: How to specify matched pairs of long and short-read data?
+5. **Q**: How to specify matched pairs of long and short-read data?
 
    **A**: You should use uniform name for data from same sample, like this:
    ```
