@@ -16,9 +16,8 @@
 #include "gtf.h"
 #include "bam2gtf.h"
 #include "update_gtf.h"
+#include "parse_bam.h"
 #include "utils.h"
-
-#define bam_unmap(b) ((b)->core.flag & BAM_FUNMAP)
 
 extern const char PROG[20];
 
@@ -71,6 +70,7 @@ int update_gtf_usage(void)
 // overlap_len / min(len1, len2)
 float exon_overlap_frac(exon_t e1, exon_t e2)
 {
+    if (e1.start > e2.end || e2.start > e1.end) return 0.0;
     int start1 = e1.start, end1 = e1.end;
     int start2 = e2.start, end2 = e2.end;
     int overlap_len = end1 - start2 + 1 > 0 ? end1 - start2 + 1 : end2 - start1 + 1;

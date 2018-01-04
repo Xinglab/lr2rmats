@@ -15,6 +15,14 @@ typedef struct {
     int32_t *exon_end, *intr_end; // exon_end[intv_n]: exonic, intr_end[intv_n-1]: intronic
 } ad_t;   // alignment details: start, end, intv_n, intv[]
 
+typedef struct {
+    int tid, is_rev, score, ed;
+    int read_start, read_end;
+    int ref_start, ref_end;
+    bam1_t *b;
+} bam_seg_t;
+
+
 #define PAIR "paried"
 #define SING "single"
 #define PAIR_T 1
@@ -22,6 +30,7 @@ typedef struct {
 
 
 #define bam_is_prop(b) (((b)->core.flag&BAM_FPROPER_PAIR) != 0)
+#define bam_unmap(b) ((b)->core.flag & BAM_FUNMAP)
 
 
 typedef struct {
@@ -34,6 +43,8 @@ typedef struct {
     hts_itr_t *itr;
 } bam_aux_t;
 
+int bam_ref_len(bam1_t *b);
+int bam_query_len(bam1_t *b);
 int ad_sim_comp(ad_t *ad1, ad_t *ad2);
 int ad_comp(ad_t *ad1, ad_t *ad2);
 ad_t *ad_init(int n);
@@ -50,6 +61,13 @@ uint8_t bam_is_uniq_NH(bam1_t *b);
 
 bam_aux_t *bam_aux_init();
 void bam_aux_destroy(bam_aux_t *aux);
+
+
+bam_seg_t *bam_seg_init(int n);
+void bam_seg_free(bam_seg_t *s, int n);
+bam_seg_t *push_bam_seg(bam_seg_t *seg, int *seg_n, int *seg_m, bam_seg_t *s);
+void move_bam_seg(bam_seg_t *seg, int dest, int src);
+int bam2seg(bam1_t *b, bam_seg_t *s);
 
 #define err_sam_open(in, fn) { if ((in = sam_open(fn, "rb")) == NULL) err_fatal(__func__, "fail to open \"%s\"\n", fn); }
 #define err_sam_hdr_read(h, in, fn) { if ((h = sam_hdr_read(in)) == NULL) err_fatal(__func__, "fail to read header for \"%s\"\n", fn); }

@@ -255,6 +255,31 @@ int bam_cigar_opn(int n_cigar, const uint32_t *cigar, uint32_t op, uint32_t len)
     return j;
 }
 
+#define BAM_CIGAR_QUERY_TYPE  0x3C5A7
+#define bam_cigar_query_type(o) (BAM_CIGAR_QUERY_TYPE>>((o)<<1)&3) // bit 1: consume query; bit 2: consume reference
+
+int bam_query_len(bam1_t *b) {
+    int n_cigar = b->core.n_cigar;
+    uint32_t *cigar = bam_get_cigar(b);
+    int i, l = 0;
+    for (i = 0; i < n_cigar; ++i) {
+        if ((bam_cigar_query_type(bam_cigar_op(cigar[i])) & 1) > 0)
+            l += bam_cigar_oplen(cigar[i]);
+    }
+    return l;
+}
+
+int bam_ref_len(bam1_t *b) {
+    int n_cigar = b->core.n_cigar;
+    uint32_t *cigar = bam_get_cigar(b);
+    int i, l = 0;
+    for (i = 0; i < n_cigar; ++i) {
+        if ((bam_cigar_query_type(bam_cigar_op(cigar[i])) & 2) > 0)
+            l += bam_cigar_oplen(cigar[i]);
+    }
+    return l;
+}
+
 int add_sj(sj_t **sj, int sj_i, int *sj_m, int tid, int don, int acc, uint8_t strand, uint8_t motif_i, uint8_t is_anno, uint8_t is_uniq)
 {
     if (sj_i == *sj_m) {
@@ -515,6 +540,99 @@ exon_t *infer_exon_coor(int *infer_e_n, exon_t *e, int e_n, int *don, int don_n)
     return infer_e;
 }
 
+int bam2seg(bam1_t *b, bam_seg_t *s) {
+    if (bam_unmap(b)) return -1;
+
+    s->tid = b->core.tid; s->is_rev = bam_is_rev(b); bam_copy1(s->b, b);
+    uint8_t *p = bam_aux_get(b, "AS"); s->score = bam_aux2i(p); // alignment score
+    p = bam_aux_get(b, "NM"); s->ed = bam_aux2i(p); // edit distance
+    int rlen = bam_query_len(b), is_rev = bam_is_rev(b);
+    int i, l, n_cigar = b->core.n_cigar; uint32_t *cigar = bam_get_cigar(b);
+    int read_start = 1, read_end = 0, ref_start = b->core.pos + 1, ref_end = ref_start - 1;
+    if (ref_start == 8364)
+        printf("debug");
+    for (i = 0; i < n_cigar; ++i) {
+        l = bam_cigar_oplen(cigar[i]);
+        switch (bam_cigar_op(cigar[i])) {
+            case BAM_CMATCH:
+            case BAM_CEQUAL:
+            case BAM_CDIFF:
+                read_end += l;
+                ref_end += l;
+                break;
+            case BAM_CINS:
+                read_end += l;
+                break;
+            case BAM_CDEL : // D(0 1)
+            case BAM_CREF_SKIP:
+                ref_end += l;
+                break;
+            case BAM_CSOFT_CLIP:
+            case BAM_CHARD_CLIP:
+                if (i == 0) {
+                    read_start += l;
+                    read_end += l;
+                }
+                break;
+            default:
+                err_printf("Error: unknown cigar type: %d.\n", bam_cigar_op(cigar[i]));
+                break;
+        }
+    }
+    if (is_rev) {
+        int tmp = read_start;
+        read_start = rlen + 1 - read_end;
+        read_end = rlen + 1 - tmp;
+    }
+
+    s->read_start = read_start, s->read_end = read_end;
+    s->ref_start = ref_start, s->ref_end = ref_end;
+    return 0;
+}
+
+bam_seg_t *bam_seg_init(int n) {
+    bam_seg_t *s = (bam_seg_t*)_err_calloc(n, sizeof(bam_seg_t));
+    int i;
+    for (i = 0; i < n; ++i) {
+        s[i].b = bam_init1();
+    }
+    return s;
+}
+
+void bam_seg_free(bam_seg_t *s, int n) {
+    int i;
+    for (i = 0; i < n; ++i) {
+        bam_destroy1(s[i].b);
+    }
+    free(s);
+}
+
+void copy_bam_seg1(bam_seg_t* dest, bam_seg_t* src) {
+    dest->tid = src->tid; dest->is_rev = src->is_rev;
+    dest->score = src->score; dest->ed = src->ed;
+    dest->ref_start = src->ref_start; dest->ref_end = src->ref_end;
+    dest->read_start = src->read_start; dest->read_end = src->read_end;
+    bam_copy1(dest->b, src->b);
+}
+
+void move_bam_seg(bam_seg_t *seg, int dest, int src) {
+    if (dest == src) return;
+    copy_bam_seg1(seg+dest, seg+src);
+}
+
+bam_seg_t *push_bam_seg(bam_seg_t *seg, int *seg_n, int *seg_m, bam_seg_t *s) {
+    int i;
+    if (*seg_n == *seg_m) {
+        *seg_m <<= 1;
+        seg = (bam_seg_t*)_err_realloc(seg, *seg_m * sizeof(bam_seg_t));
+        for (i = *seg_m / 2; i < *seg_m; ++i) {
+            seg[i].b = bam_init1();
+        }
+    }
+    copy_bam_seg1(seg + *seg_n, s);
+    (*seg_n)++;
+    return seg;
+}
 // only junction-read are kept in AD_T
 int parse_bam(int tid, int start, int *_end, int n_cigar, const uint32_t *c, uint8_t is_uniq, kseq_t *seq, int seq_n, ad_t **ad_g, int *ad_n, int *ad_m, sj_t **sj, int *sj_n, int *sj_m, sj_para *sjp)
 {
@@ -727,7 +845,7 @@ int parse_bam_record1(bam1_t *b, ad_t *ad, sj_para *sjp)
 
     tid = b->core.tid; n_cigar = b->core.n_cigar; cigar = bam_get_cigar(b);
     bam_start = b->core.pos+1;
-    ad->rlen = b->core.l_qseq;
+    ad->rlen = bam_query_len(b);
 #ifdef __DEBUG__
     err_printf("%s %d ", bam_get_qname(b), b->core.pos+1);
     int i;

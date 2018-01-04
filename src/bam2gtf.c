@@ -10,6 +10,7 @@
 #include <getopt.h>
 #include "bam2gtf.h"
 #include "htslib/sam.h"
+#include "parse_bam.h"
 #include "utils.h"
 #include "gtf.h"
 
