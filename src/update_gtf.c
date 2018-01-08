@@ -44,7 +44,7 @@ int update_gtf_usage(void)
     err_printf("\n");
 
     err_printf("Function options:\n\n");
-    err_printf("         -j --sj          [STR]    intron information file output by STAR(*.out.tab). [NULL]\n");
+    err_printf("         -j --sj          [STR]    junction information file output by STAR(*.out.tab). [NULL]\n");
     err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
     err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
     err_printf("         -d --distance    [INT]    consider same if distance between two splice site is not bigger than d. [%d]\n", SPLICE_DISTANCE);

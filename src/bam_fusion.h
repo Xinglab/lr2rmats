@@ -6,6 +6,7 @@ int bam_fusion(int argc, char *argv[]);
 typedef struct {
     float ovlp_frac, each_cov, all_cov;
     int dis;
+    FILE *fs_fp; // fusion site output file
 } bam_fusion_para;
 
 #define OVLP_FRAC 0.1

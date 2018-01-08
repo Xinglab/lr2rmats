@@ -6,7 +6,7 @@
 #include "parse_bam.h"
 #include "utils.h"
 #include "bam_fusion.h"
-#include "htslib/sam.h"
+#include "../htslib/htslib/sam.h"
 
 extern char PROG[25];
 
@@ -17,23 +17,29 @@ bam_fusion_para *bam_fusion_init_para(void) {
     bfp->all_cov = ALL_COV;
     bfp->dis = FUSION_DIS;
 
+    bfp->fs_fp = NULL;
+
     return bfp;
 }
+
 int fusion_usage(void)
 {
     err_printf("\n");
     err_printf("Usage:   %s fusion [option] <in.bam/sam> > fusion.sam\n", PROG);
     err_printf("     or: %s fusion [option] <in.bam/sam> | bedtools bamtobed -i stdin -bed12 > fusion.bed\n\n", PROG);
     err_printf("Options:\n");
-    err_printf("         -o --ovlp-frac  [FLOAT]    maximum overlap fraction of each fusion part. [%.2f]\n", OVLP_FRAC);
-    err_printf("         -v --each-cov   [FLOAT]    minimum fraction of each fusion part. [%.2f]\n", EACH_COV);
-    err_printf("         -V --all-cov    [FLOAT]    minimum fraction of all mapped parts. [%.2f]\n", ALL_COV);
-    err_printf("         -d --dis        [INT]      minimum distance of two fusion parts. [%s]\n", FUSION_DIS_STR);
+    err_printf("         -o --ovlp-frac   [FLOAT]    maximum overlap fraction of each fusion part. [%.2f]\n", OVLP_FRAC);
+    err_printf("         -v --each-cov    [FLOAT]    minimum fraction of each fusion part. [%.2f]\n", EACH_COV);
+    err_printf("         -V --all-cov     [FLOAT]    minimum fraction of all mapped parts. [%.2f]\n", ALL_COV);
+    err_printf("         -d --dis         [INT]      minimum distance of two fusion parts. [%s]\n", FUSION_DIS_STR);
+    err_printf("         -f --fusion-site [STR]      output fusion site file. [NULL]\n");
+    //err_printf("         -g --gtf         [STR]      gene annotation in GTF format. [None]\n");
     err_printf("\n");
     return 1;
 }
 
 const struct option fusion_long_opt [] = {
+    { "ovlp-frac", 1, NULL, 'o' },
     { "each-cov", 1, NULL, 'v' },
     { "all-cov", 1, NULL, 'V' },
     { "dis", 1, NULL, 'd' },
@@ -49,12 +55,6 @@ int str2int(char *str)
     else if (*p == 'M' || *p == 'm') d *= 1e6;
     else if (*p == 'K' || *p == 'k') d *= 1e3;
     return (int)(d + 0.499); 
-}
-
-// output 
-int bam_fusion_output()
-{
-    return 0;
 }
 
 int seg_cmpfunc (const void * a, const void * b) {
@@ -74,7 +74,7 @@ int check_with_exist1(bam_seg_t* s1, bam_seg_t* s2, bam_fusion_para *bfp) {
     // at most ovlp_frac overlap
     if (ovlp_rat(s1->read_start, s1->read_end, s2->read_start, s2->read_end) > bfp->ovlp_frac) return 0;
     // mapping distance >= dis
-    if (s1->tid == s2->tid && s1->is_rev == s2->is_rev) {
+    if (s1->tid == s2->tid) { // && s1->is_rev == s2->is_rev) {
         if (ovlp_rat(s1->ref_start, s1->ref_end, s2->ref_start, s2->ref_end) > 0.0) {
             return 0;
         } else {
@@ -127,16 +127,30 @@ int check_fusion(bam_seg_t *seg, int rlen, int seg_n, bam_fusion_para *bfp) {
     return -1;
 }
 
+// seg_n == 2
+void fusion_write(FILE *out, bam_seg_t *seg, int seg_n, char **target_name) {
+    if (seg_n != 2) return;
+    int left_i, right_i;
+    if (seg[0].read_start < seg[1].read_start) {
+        left_i = 0, right_i = 1;
+    } else {
+        left_i = 1, right_i = 0;
+    }
+
+    fprintf(out, "%s\t%s\t%c\t%d\t%d\t%s\t%c\t%d\t%d\n", bam_get_qname(seg[left_i].b), target_name[seg[left_i].tid], "+-"[seg[left_i].is_rev], seg[left_i].ref_start, seg[left_i].ref_end, target_name[seg[right_i].tid], "+-"[seg[right_i].is_rev], seg[right_i].ref_start, seg[right_i].ref_end);
+}
+
 int bam_fusion(int argc, char *argv[])
 {
     int c;
     bam_fusion_para *bfp = bam_fusion_init_para();
-    while ((c = getopt_long(argc, argv, "v:V:d:", fusion_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "o:v:V:d:f:", fusion_long_opt, NULL)) >= 0) {
         switch (c) {
             case 'o': bfp->ovlp_frac = atof(optarg); break;
             case 'v': bfp->each_cov = atof(optarg); break;
             case 'V': bfp->all_cov = atof(optarg); break;
             case 's': bfp->dis = str2int(optarg); break;
+            case 'f': bfp->fs_fp = xopen(optarg, "w"); break;
             default : return fusion_usage();
         }
     }
@@ -155,18 +169,21 @@ int bam_fusion(int argc, char *argv[])
     bam_seg_t *s = bam_seg_init(1), *seg = bam_seg_init(2);
     int seg_m = 2, seg_n = 0, i, rlen, cnt = 0;
 
+    if (bfp->fs_fp) fprintf(bfp->fs_fp, "#fusion_id\t1st_chr\t1st_strand\tst_start_site\t1st_end_site\t2nd_chr\t2nd_strand\t2nd_start_site\t2nd_end_site\n");
+
     while (sam_read1(in, h, b) >= 0) {
         if (bam2seg(b, s) < 0) continue;
 
         if (strcmp(bam_get_qname(b), lqname) == 0) {
             seg = push_bam_seg(seg, &seg_n, &seg_m, s);
         } else {
-            if (strcmp(lqname, "\0") != 0 && seg_n > 1) {
+            if (strcmp(lqname, "\0") != 0 && seg_n >= 2) {
                 seg_n = check_fusion(seg, rlen, seg_n, bfp);
-                if (seg_n > 1) {
+                if (seg_n == 2) {
                     for (i = 0; i < seg_n; ++i) {
                         if (sam_write1(out, h, seg[i].b) < 0) err_fatal_simple("Error in writing SAM record\n");
                     }
+                    if (bfp->fs_fp) fusion_write(bfp->fs_fp, seg, 2, h->target_name);
                     cnt++;
                 }
             }
@@ -175,9 +192,9 @@ int bam_fusion(int argc, char *argv[])
             seg = push_bam_seg(seg, &seg_n, &seg_m, s);
         }
     }
-    if (strcmp(lqname, "\0") != 0 && seg_n > 1) {
+    if (strcmp(lqname, "\0") != 0 && seg_n >= 2) {
         seg_n = check_fusion(seg, rlen, seg_n, bfp);
-        if (seg_n > 1) {
+        if (seg_n == 2) {
             for (i = 0; i < seg_n; ++i) {
                 if (sam_write1(out, h, seg[i].b) < 0) err_fatal_simple("Error in writing SAM record\n");
             }
@@ -187,6 +204,7 @@ int bam_fusion(int argc, char *argv[])
     err_func_format_printf(__func__, "Candidate gene-fusion transcripts: %d\n", cnt);
     bam_destroy1(b); bam_hdr_destroy(h); sam_close(in); sam_close(out);
     bam_seg_free(s, 1); bam_seg_free(seg, seg_m);
+    if (bfp->fs_fp) err_fclose(bfp->fs_fp);
     free(bfp);
 
     return 0;
