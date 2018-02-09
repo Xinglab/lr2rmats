@@ -24,7 +24,7 @@ extern const char PROG[20];
 update_gtf_para *update_gtf_init_para(void) {
     update_gtf_para *ugp = (update_gtf_para*)_err_malloc(sizeof(update_gtf_para));
     ugp->input_mode = 0/*bam*/; ugp->gtf_bam = NULL;
-    ugp->sj_fp = NULL;
+    ugp->sj_fp = NULL; ugp->use_multi = 0; ugp->min_sj_cnt = MIN_SJ_CNT;
     ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->full_level = 5/*most relax*/; ugp->split_trans = 0;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
     ugp->out_gtf_fp = stdout; ugp->bam_gtf_fp = NULL; ugp->bam_detail_fp = NULL; ugp->known_gtf_fp = NULL; ugp->novel_gtf_fp = NULL; ugp->unrecog_gtf_fp = NULL; ugp->summary_fp = NULL;
@@ -41,15 +41,17 @@ int update_gtf_usage(void)
     err_printf("Input options:\n\n");
     err_printf("         -m --input-mode  [STR]    format of input file <in.bam/in.gtf>, BAM file(b) or GTF file(g). [b]\n");
     err_printf("         -b --bam         [STR]    for GTF input <in.gtf>, BAM file is needed to obtain BAM header information. [NULL]\n");
+    err_printf("         -j --sj          [STR]    junction information file output by STAR(*.out.tab). [NULL]\n");
     err_printf("\n");
 
     err_printf("Function options:\n\n");
-    err_printf("         -j --sj          [STR]    junction information file output by STAR(*.out.tab). [NULL]\n");
     err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
     err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
     err_printf("         -d --distance    [INT]    consider same if distance between two splice site is not bigger than d. [%d]\n", SPLICE_DISTANCE);
     err_printf("         -s --split-trans          split read on unreliable junctions. [NULL]\n");
     //err_printf("         -s --match-strand         only transcript of matched strand will be 
+    err_printf("         -M --use-multi            use junction information of multi-mapped read. [False]\n");
+    err_printf("         -J --min-junc-cnt [INT]    minimum short-read junction count of novel junction. [%d]\n", MIN_SJ_CNT);
     err_printf("         -l --full-length [INT]    level of strict criterion for considering full-length transcript. \n");
     err_printf("                                   (1->5, most strict->most relaxed) [%d]\n", 5);
     err_printf("\n");
@@ -374,20 +376,20 @@ int print_bam_detail_trans(read_trans_t *bam_T, chr_name_t *cname, FILE *fp)
         for (j = 0; j < bam_t->exon_n-1; ++j) {
             unreliable_junction_n += bam_t->unreliable_junction_flag[j];
         }
-        //           13
+        //           15
         fprintf(fp, "%d\t", unreliable_junction_n);
         tot_unreliable_junction_n += unreliable_junction_n;
-        //                                          14
+        //                                          16
         if(unreliable_junction_n == 0) fprintf(fp, "%s\t", na);
         else {
             first = 1;
             for (j = 0; j < bam_t->exon_n-1; ++j) {
                 if (bam_t->unreliable_junction_flag[j]) {
                     if (first == 1) first = 0; else fprintf(fp, ",");
-                    //           14
+                    //           16
                     fprintf(fp, "%d", j);
                 }
-            } //fprintf(fp, "\t");
+            } // fprintf(fp, "\t");
         }
         fprintf(fp, "\n");
     }
@@ -535,12 +537,17 @@ int print_trans_summary(read_trans_t *anno_T, read_trans_t *updated_T, read_tran
     return 0;
 }
 
-int check_short_sj1(int tid, int start, int end, sj_t *sj_group, int sj_n, int i_start, int dis)
+int check_short_sj1(int tid, int start, int end, sj_t *sj_group, int sj_n, int i_start, update_gtf_para *ugp)
 {
-    int i = i_start;
+    int i = i_start, sj_cnt;
+    int dis = ugp->ss_dis, min_cnt = ugp->min_sj_cnt;
     while (i < sj_n) {
         if (sj_group[i].tid > tid || sj_group[i].don > start) return 0;
-        if (abs(sj_group[i].don-start)<=dis && abs(sj_group[i].acc-end)<=dis) return 1;
+        if (abs(sj_group[i].don-start)<=dis && abs(sj_group[i].acc-end)<=dis) {
+            if (ugp->use_multi) sj_cnt = sj_group[i].uniq_c + sj_group[i].multi_c;
+            else sj_cnt = sj_group[i].uniq_c;
+            if (sj_cnt >= min_cnt) return 1;
+        }
         else i++;
     }
     return 0;
@@ -915,6 +922,8 @@ const struct option update_long_opt [] = {
     { "min-intron", 1, NULL, 'i' },
     { "distance", 1, NULL, 'd' },
     { "full-gtf", 1, NULL, 'l' },
+    { "use-multi", 0, NULL, 'M' },
+    { "min_sj_cnt", 1, NULL, 'J' },
 
     { "output", 1, NULL, 'o' }, 
     { "bam-gtf", 1, NULL, 'a' },
@@ -923,6 +932,7 @@ const struct option update_long_opt [] = {
     { "unrecog", 1, NULL, 'u' },
     { "source", 1, NULL, 's' },
 
+
     { 0, 0, 0, 0}
 };
 
@@ -930,7 +940,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:e:i:s:d:l:o:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:s:d:l:o:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; else if (optarg[0] == 'g') ugp->input_mode=1; else return update_gtf_usage();
@@ -950,6 +960,8 @@ int update_gtf(int argc, char *argv[])
             case 'd': ugp->ss_dis = atoi(optarg); break;
             case 's': ugp->split_trans = 1; break;
             case 'l': ugp->full_level = atoi(optarg); break;
+            case 'M': ugp->use_multi = 1; break;
+            case 'J': ugp->min_sj_cnt = atoi(optarg); break;
 
             case 'o': ugp->out_gtf_fp = fopen(optarg, "w"); break;
             case 'a': ugp->bam_gtf_fp = fopen(optarg, "w"); break;

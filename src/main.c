@@ -8,7 +8,7 @@
 #include "bam2gtf.h"
 #include "parse_bam.h"
 
-const char PROG[20] = "lr2gtf";
+const char PROG[20] = "lr2rmats";
 const char VERSION[20] = "1.0.0";
 const char DATE[20] = "2017-11-22";
 const char CONTACT[30] = "yangaoucla@gmail.com";

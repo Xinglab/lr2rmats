@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
     int tid, is_rev, score, ed;
     int read_start, read_end;
-    int ref_start, ref_end;
+    int ref_start, ref_end; char gname[1024];
     bam1_t *b;
 } bam_seg_t;
 

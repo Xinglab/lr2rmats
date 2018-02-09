@@ -1,22 +1,22 @@
-# lr2gtf: Long read to GTF
-## <a name="lr2gtf"></a>What is lr2gtf ?
-lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light-weight pipeline which is designed to utilize both third-generation long-read and second-generation short-read RNA-seq data to generate an enhanced gene annotation file.
+# lr2rmats: Long read to GTF
+## <a name="lr2rmats"></a>What is lr2rmats ?
+lr2rmats is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light-weight pipeline which is designed to utilize both third-generation long-read and second-generation short-read RNA-seq data to generate an enhanced gene annotation file.
 
 
 ## Table of Contents
 
-- [What is lr2gtf ?](#lr2gtf)
+- [What is lr2rmats ?](#lr2rmats)
 - [Installation](#install)
   - [Operating system](#os)
-  - [Cloning and building lr2gtf pipeline](#build)
+  - [Cloning and building lr2rmats pipeline](#build)
   - [Dependencies](#depen)
 - [Getting started with toy example in `test_data`](#start)
 - [Input and output](#input_output)
   - [Input files](#input)
   - [Output files](#output)
   - [Intermediate and log files](#intermediate)
-- [Running lr2gtf on a local machine](#local)
-- [Running lr2gtf on a computer cluster](#cluster)
+- [Running lr2rmats on a local machine](#local)
+- [Running lr2rmats on a computer cluster](#cluster)
 - [More about `snakemake` and configuration file](#snakemake)
 - [FAQ](#FAQ)
 - [Contact](#contact)
@@ -24,23 +24,23 @@ lr2gtf is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light
 
 ## <a name="install"></a>Installation
 ### <a name="os"></a>Operating system
-lr2gtf currently can only be built and run on Linux/Unix systems.
+lr2rmats currently can only be built and run on Linux/Unix systems.
 
-### <a name="build"></a>Cloning and building lr2gtf pipeline
+### <a name="build"></a>Cloning and building lr2rmats pipeline
 ```
-git clone https://github.com/Xinglab/lr2gtf.git --recursive
-cd lr2gtf
+git clone https://github.com/Xinglab/lr2rmats.git --recursive
+cd lr2rmats
 make dependencies
-make lr2gtf
+make lr2rmats
 ```
-`make dependencies` command will build all dependencies that are needed by lr2gtf. `make lr2gtf` will build the main program of the lr2gtf pipeline. 
+`make dependencies` command will build all dependencies that are needed by lr2rmats. `make lr2rmats` will build the main program of the lr2rmats pipeline. 
 
 Alternatively, you could simply type `make` to build everything you need.
 
-After the building is done, the path of `lr2gtf/bin` needs to be added to the environment variable PATH.
+After the building is done, the path of `lr2rmats/bin` needs to be added to the environment variable PATH.
 
 ### <a name="depen"></a>Dependencies 
-lr2gtf is dependent on following open-source software: [minimap2](https://github.com/lh3/minimap2), [STAR](https://github.com/alexdobin/STAR), [samtools](https://github.com/samtools/samtools) and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
+lr2rmats is dependent on following open-source software: [minimap2](https://github.com/lh3/minimap2), [STAR](https://github.com/alexdobin/STAR), [samtools](https://github.com/samtools/samtools) and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
 
 They will be automatically downloaded and built via `make dependencies` command if they are not installed in your computer.
 
@@ -105,18 +105,18 @@ Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`
 * `logs` contains the log file of each job.
 * `benchmark` contains each job's running time, memory usage and other measurements.
 
-## <a name="local"></a>Running lr2gtf on a local machine
+## <a name="local"></a>Running lr2rmats on a local machine
 `snakemake -p --snakefile ./Snakefile --configfile ./config.yaml --cores 8`
 
-8 threads will be used in parallel on the local machine. For more details about how to run lr2gtf on a local machine, refer to [More about `snakemake` and configuration file](#snakemake).
+8 threads will be used in parallel on the local machine. For more details about how to run lr2rmats on a local machine, refer to [More about `snakemake` and configuration file](#snakemake).
 
  
-## <a name="cluster"></a>Running lr2gtf on a computer cluster
+## <a name="cluster"></a>Running lr2rmats on a computer cluster
 ```
 snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-config ./config.yaml \
 --cluster "qsub -cwd -V -l h_data={cluster.h_data},h_rt={cluster.h_rt} -pe shared {cluster.threads}"
 ```
-Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2gtf on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
+Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2rmats on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
 1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
@@ -128,13 +128,13 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
 ## <a name="FAQ"></a>FAQ
 
-1. **Q**: How many samples are needed for lr2gtf?
+1. **Q**: How many samples are needed for lr2rmats?
 
-   **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2gtf.
+   **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2rmats.
 
 2. **Q**: Do I need to provide read data in FASTA format?
 
-   **A**: lr2gtf works with FASTA, FASTQ, gzip'd FASTA(.fa.gz) and gzip'd FASTQ(.fq.gz) formats. 
+   **A**: lr2rmats works with FASTA, FASTQ, gzip'd FASTA(.fa.gz) and gzip'd FASTQ(.fq.gz) formats. 
    
 3. **Q**: How to specify the directory of output and intermediate files?
 
@@ -171,6 +171,6 @@ Yan Gao yangao@ucla.edu
 
 Yi Xing yxing@ucla.edu
 
-[github issues](https://github.com/Xinglab/lr2gtf/issues)
+[github issues](https://github.com/Xinglab/lr2rmats/issues)
 
   

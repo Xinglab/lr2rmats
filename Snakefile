@@ -71,10 +71,10 @@ rule sam_novel_gtf:
     benchmark:
         "benchmark/{sample}.novel_gtf.benchmark.txt"
     params:
-        lr2gtf=config["exe_files"]["lr2gtf"],
+        lr2rmats=config["exe_files"]["lr2rmats"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2gtf} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2gtf} update-gtf - {input.gtf} 2>> {log} > {output}"
+        "{params.lr2rmats} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2rmats} update-gtf - {input.gtf} 2>> {log} > {output}"
 
 # merge and sort gtf
 rule new_gtf:
@@ -137,11 +137,11 @@ rule gtf_novel_gtf:
     benchmark:
         "benchmark/{sample}_gtf_novel_gtf.benchmark.txt"
     params:
-        lr2gtf=config["exe_files"]["lr2gtf"],
+        lr2rmats=config["exe_files"]["lr2rmats"],
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2gtf} update-gtf -mg -b {input.bam} -I {input.SJ} {input.novel_gtf} {input.gtf} > {output} 2> {log}"
+        "{params.lr2rmats} update-gtf -mg -b {input.bam} -I {input.SJ} {input.novel_gtf} {input.gtf} > {output} 2> {log}"
 
 rule update_gtf:
     input:
@@ -154,7 +154,7 @@ rule update_gtf:
     benchmark:
         "benchmark/update_gtf.benchmark.txt"
     params:
-        lr2gtf=config["exe_files"]["lr2gtf"],
+        lr2rmats=config["exe_files"]["lr2rmats"],
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:

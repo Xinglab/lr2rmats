@@ -5,7 +5,7 @@ genome:
     gtf: test_data/gtf/original.gtf
     rRNA: test_data/gtf/rRNA.gtf
     # specify existing index file if they are alread built
-    # lr2gtf will build them if they do not exist
+    # lr2rmats will build them if they do not exist
     minimap_idx: test_data/genome/genome.fa.smmi
     star_idx: test_data/genome/genome.STAR
 
@@ -31,7 +31,7 @@ exe_files:
     samtools: samtools
     minimap2: minimap2
     star: STAR
-    lr2gtf: lr2gtf
+    lr2rmats: lr2rmats
     sort_gtf: sort_gtf.sh
 
 # allocate computing resource

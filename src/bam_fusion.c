@@ -33,7 +33,8 @@ int fusion_usage(void)
     err_printf("         -V --all-cov     [FLOAT]    minimum fraction of all mapped parts. [%.2f]\n", ALL_COV);
     err_printf("         -d --dis         [INT]      minimum distance of two fusion parts. [%s]\n", FUSION_DIS_STR);
     err_printf("         -f --fusion-site [STR]      output fusion site file. [NULL]\n");
-    //err_printf("         -g --gtf         [STR]      gene annotation in GTF format. [None]\n");
+    // TODO extract gene name/id from gtf
+    err_printf("         -g --gtf         [STR]      gene annotation in GTF format. [None]\n");
     err_printf("\n");
     return 1;
 }

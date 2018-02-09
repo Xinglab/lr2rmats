@@ -544,8 +544,12 @@ int bam2seg(bam1_t *b, bam_seg_t *s) {
     if (bam_unmap(b)) return -1;
 
     s->tid = b->core.tid; s->is_rev = bam_is_rev(b); bam_copy1(s->b, b);
-    uint8_t *p = bam_aux_get(b, "AS"); s->score = bam_aux2i(p); // alignment score
-    p = bam_aux_get(b, "NM"); s->ed = bam_aux2i(p); // edit distance
+    uint8_t *p;
+    if ((p = bam_aux_get(b, "AS")) == 0) s->score = 0;
+    else s->score = bam_aux2i(p); // alignment score
+    if ((p = bam_aux_get(b, "NM")) == 0) s->ed = 0;
+    else s->ed = bam_aux2i(p); // edit distance
+
     int rlen = bam_query_len(b), is_rev = bam_is_rev(b);
     int i, l, n_cigar = b->core.n_cigar; uint32_t *cigar = bam_get_cigar(b);
     int read_start = 1, read_end = 0, ref_start = b->core.pos + 1, ref_end = ref_start - 1;
@@ -595,6 +599,7 @@ bam_seg_t *bam_seg_init(int n) {
     int i;
     for (i = 0; i < n; ++i) {
         s[i].b = bam_init1();
+        strcpy(s[i].gname, "NA");
     }
     return s;
 }
