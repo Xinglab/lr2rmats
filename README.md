@@ -32,6 +32,7 @@ git clone https://github.com/Xinglab/lr2rmats.git --recursive
 cd lr2rmats
 make dependencies
 make lr2rmats
+export PATH=$PATH:$PWD/bin # To permanently modify your PATH, you need to add it to your ~/.profile or ~/.bashrc file. 
 ```
 `make dependencies` command will build all dependencies that are needed by lr2rmats. `make lr2rmats` will build the main program of the lr2rmats pipeline. 
 
