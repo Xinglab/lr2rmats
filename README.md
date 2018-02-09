@@ -86,7 +86,7 @@ output:
  
 - `samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1 (***required***).
 
-For single-end read multiple samples data, please refer to [FAQ](#FAQ). 
+For single-end read or multiple samples data, please refer to [FAQ](#FAQ). 
 
 ### <a name="output"></a>Output files
 - `updated.gtf`: enhanced gene annotation file. It contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
@@ -103,7 +103,6 @@ In addition to the updated annotation file, more detailed information are also p
 
 - `summary.txt`: summary statistics of the whole pipeline. It includes the summary of annotation and updated/known/novel/unrecognized transcript information. 
 
-""
 
 ### <a name="intermediate"></a>Intermediate and log files
 Intermediate files will be generated in four folders: `alignment`, `gtf`, `logs`, and `benchmark`.
