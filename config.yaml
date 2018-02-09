@@ -24,8 +24,8 @@ sample:
 # specify path of output file
 # RELATIVE PATH here will use working directory as their origin).
 output:
-    gtf: updated.gtf # file name of updated GTF
-
+    updated_gtf: output/updated.gtf # file name of updated GTF
+    
 # add all execuatable files to PATH, or put their ABSOLUTE paths here
 exe_files:
     samtools: samtools

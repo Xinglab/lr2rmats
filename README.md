@@ -1,6 +1,6 @@
-# lr2rmats: Long read to GTF
+# lr2rmats: Long read to rMATS
 ## <a name="lr2rmats"></a>What is lr2rmats ?
-lr2rmats is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light-weight pipeline which is designed to utilize both third-generation long-read and second-generation short-read RNA-seq data to generate an enhanced gene annotation file.
+lr2rmats is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light-weight pipeline which is designed to utilize both third-generation long-read and second-generation short-read RNA-seq data to generate an enhanced gene annotation file. The newly generated annotation file could be provided to [rMATS](http://rnaseq-mats.sourceforge.net/) for differential alternative splicing analysis.
 
 
 ## Table of Contents
@@ -49,9 +49,9 @@ You can choose to build them separately, like `make minimap2`, `make snakemake`.
 
 ## <a name="start"></a>Getting started with toy example in `test_data`
 ```
-snakemake -p --snakefile ./Snakefile --configfile ./config.yaml updated.gtf
+snakemake -p --snakefile ./Snakefile --configfile ./config.yaml
 ``` 
-Enhanced gene annotation file `updated.gtf` will be generated in current working directory, along with some intermediate and log files.
+Enhanced gene annotation file `output/updated.gtf` will be generated in current working directory, along with some intermediate and log files.
 
 ## <a name="input_output"></a>Input and output
 All the input and output files are specified in the configuration file `config.yaml`: 
@@ -72,29 +72,36 @@ sample:
 # output
 output:
     updated_gtf: output/updated.gtf
-    ucsc_known: output/ucsc_known.gff
-    ucsc_novel: output/ucsc_novel.gff
-    stats: output/stats_summary.txt
     
 ```
 
 ### <a name="input"></a>Input files
-`genome.fa`: genome file in FASTA format.
+- `genome.fa`: genome file in FASTA format (***required***).
 
-`original.gtf`: original existing gene annotation file.
+- `original.gtf`: original existing gene annotation file (***required***).
 
-`rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped.
+- `rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped (***optional***).
 
-`samp1_long.fa`: long-read data of sample #1.
+- `samp1_long.fa`: long-read data of sample #1 (***required***).
  
-`samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1.
+- `samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1 (***required***).
+
+For single-end read multiple samples data, please refer to [FAQ](#FAQ). 
 
 ### <a name="output"></a>Output files
-`updated.gtf`: enhanced gene annotation file. It contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
+- `updated.gtf`: enhanced gene annotation file. It contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
 
-`ucsc_known.gff` and `ucsc_novel.gff`: custom tracks of known and novel transcripts which are ready for UCSC genome browser visualization.
+In addition to the updated annotation file, more detailed information are also provided:
 
-`stats_summary.txt`: summary statistics of the whole pipeline. It includes number of long-read derived novel transcripts, novel exons, novel splice sites and so on. 
+- `known.gtf`: all known transcripts from long-read that already exist in the input annotation file.
+
+- `novel.gtf`: all novel transcripts from long-read that are different from any of the annotation transcript. Here, only novel transcripts that have at least one known splice site are kept. 
+
+- `unrecog.gtf`: all unrecognized transcripts from long-read that have no known splice site.
+
+- `detail.txt`: detailed information for each long-read derived transcript.
+
+- `summary.txt`: summary statistics of the whole pipeline. It includes the summary of annotation and updated/known/novel/unrecognized transcript information. 
 
 ""
 

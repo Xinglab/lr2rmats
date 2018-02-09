@@ -510,9 +510,12 @@ int print_trans_summary(read_trans_t *anno_T, read_trans_t *updated_T, read_tran
 
     // print
     // annotation
-    fprintf(fp, "%s\t%d\n", "Known_Genes_from_GTF", anno_gene_n);
-    fprintf(fp, "%s\t%d\n", "Known_Transcripts_from_GTF", anno_trans_n);
+    fprintf(fp, "==== Annotaion ====\n");
+    fprintf(fp, "%s\t%d\n", "Genes_of_annotation_GTF", anno_gene_n);
+    fprintf(fp, "%s\t%d\n", "Transcripts_of_annotation_GTF", anno_trans_n);
+    fprintf(fp, "\n===================\n");
     // updated information
+    fprintf(fp, "\n==== Updated information ====\n");
     fprintf(fp, "%s\t%d\n", "Updated_Genes", updated_gene_n);
     fprintf(fp, "%s\t%d\n", "Added_Novel_Transcripts", updated_full_trans_n+updated_partial_trans_n);
     fprintf(fp, "%s\t%d\n", "Added_Novel_Full-read_Transcripts", updated_full_trans_n);
@@ -520,19 +523,26 @@ int print_trans_summary(read_trans_t *anno_T, read_trans_t *updated_T, read_tran
     fprintf(fp, "%s\t%d\n", "Added_Novel_Exons", updated_novel_exon_n);
     fprintf(fp, "%s\t%d\n", "Added_Novel_Sites", updated_novel_don_site_n+updated_novel_acc_site_n);
     fprintf(fp, "%s\t%d\n", "Added_Novel_Splice_Junctions", updated_novel_junction_n);
+    fprintf(fp, "\n=============================\n");
     // known information
+    fprintf(fp, "\n==== Known information ====\n");
     fprintf(fp, "%s\t%d\n", "Known_Transcripts_from_BAM", known_trans_n);
     fprintf(fp, "%s\t%d\n", "Genes_of_Known_Transcripts_from_BAM", known_gene_n);
     fprintf(fp, "%s\t%d\n", "Uniq_Known_Transcripts_from_BAM", uniq_known_trans_n);
+    fprintf(fp, "\n===========================\n");
     // novel information
+    fprintf(fp, "\n==== Novel information ====\n");
     fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM", reliable_novel_trans_n+unreliable_novel_trans_n);
     fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_All_Reliable_Junction", reliable_novel_trans_n);
     fprintf(fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_All_Reliable_Junction", uniq_reliable_novel_trans_n);
     fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_Unreliable_Junction", unreliable_novel_trans_n);
     fprintf(fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_Unreliable_Junction", uniq_unreliable_novel_trans_n);
+    fprintf(fp, "\n===========================\n");
     // unrecognized information
+    fprintf(fp, "\n==== Unrecognized information ====\n");
     fprintf(fp, "%s\t%d\n", "Unrecognized_Transcript_from_BAM", unrecog_trans_n);
     fprintf(fp, "%s\t%d\n", "Uniq_Unrecognized_Transcript_from_BAM", uniq_unrecog_trans_n);
+    fprintf(fp, "\n==================================\n");
 
     return 0;
 }
@@ -557,7 +567,7 @@ int check_short_sj1(int tid, int start, int end, sj_t *sj_group, int sj_n, int i
 // return:
 // 1: support by short sj
 // 0: not support by short sj
-int check_short_sj(trans_t *bam_t, int *sj_map, sj_t *sj_group, int sj_n, int *sj_i, int dis)
+int check_short_sj(trans_t *bam_t, int *sj_map, sj_t *sj_group, int sj_n, int *sj_i, update_gtf_para *ugp)
 {
     int i = *sj_i, j, ret= 1;
     while (i < sj_n) {
@@ -566,7 +576,7 @@ int check_short_sj(trans_t *bam_t, int *sj_map, sj_t *sj_group, int sj_n, int *s
         } else if (sj_group[i].tid > bam_t->tid) return 0;
         else {
             for (j = 0; j < bam_t->exon_n-1; ++j) {
-                if (sj_map[j] == 0 && check_short_sj1(bam_t->tid, bam_t->exon[j].end+1, bam_t->exon[j+1].start-1, sj_group, sj_n, i, dis) == 0) {
+                if (sj_map[j] == 0 && check_short_sj1(bam_t->tid, bam_t->exon[j].end+1, bam_t->exon[j+1].start-1, sj_group, sj_n, i, ugp) == 0) {
                     bam_t->unreliable_junction_flag[j] = 1;
                     ret = 0;
                 }
@@ -653,7 +663,7 @@ int check_with_short_sj(trans_t *bam_t, sj_t *sj_group, int sj_n, int *last_sj_i
     for (i = 0; i < bam_t->exon_n-1; ++i) {
         sj_map[i] = 1 - bam_t->novel_junction_flag[i];
     }
-    int ret = check_short_sj(bam_t, sj_map, sj_group, sj_n, last_sj_i, ugp->ss_dis);
+    int ret = check_short_sj(bam_t, sj_map, sj_group, sj_n, last_sj_i, ugp);
     free(sj_map);
     bam_t->has_unreliable_junction = 1-ret;
     return ret;
@@ -943,7 +953,10 @@ int update_gtf(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:s:d:l:o:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
-            case 'm': if (optarg[0] == 'b') ugp->input_mode=0; else if (optarg[0] == 'g') ugp->input_mode=1; else return update_gtf_usage();
+            case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
+                          else if (optarg[0] == 'g') ugp->input_mode=1; 
+                          else return update_gtf_usage(); 
+                          break;
             case 'b': if ((ugp->gtf_bam = sam_open(optarg, "rb")) == NULL) {
                           err_fatal(__func__, "Cannot open \"%s\"\n", optarg); 
                           return update_gtf_usage();
@@ -996,7 +1009,7 @@ int update_gtf(int argc, char *argv[])
     samFile *in = NULL; bam_hdr_t *h; 
     if (ugp->input_mode == 0) { // bam input
         bam1_t *b;
-        if ((in = sam_open(argv[optind], "rb")) == NULL) err_fatal(__func__, "Cannot open \"%s\"\n", argv[optind]);
+        if ((in = sam_open(argv[optind], "rb")) == NULL) err_fatal(__func__, "Can not open \"%s\"\n", argv[optind]);
         if ((h = sam_hdr_read(in)) == NULL) err_fatal(__func__, "Couldn't read header for \"%s\"\n", argv[optind]);
         bam_set_cname(h, cname);
         b = bam_init1(); 

@@ -1,6 +1,6 @@
 rule all:
     input:
-        config["output"]["gtf"]
+        config["output"]["updated_gtf"]
 
 # STAR build index file
 rule star_idx:
@@ -18,7 +18,7 @@ rule star_idx:
         star=config["exe_files"]["star"]
     shell:
         "mkdir {output}; "
-        "{params.star} --runMode genomeGenerate --runThreadN {threads} --genomeFastaFiles {input} --genomeDir {output} --outFileNamePrefix {log} >> ${log}"
+        "{params.star} --runMode genomeGenerate --runThreadN {threads} --genomeFastaFiles {input} --genomeDir {output} --outFileNamePrefix {log} >> {log}"
 
 # minimap build index file
 rule minimap_idx:
@@ -122,7 +122,6 @@ rule star_map:
         "--outFilterType BySJout   --outFilterMultimapNmax 20 "
         "--outFilterMismatchNmax 999   --alignIntronMin 25   --alignIntronMax 1000000   --alignMatesGapMax 1000000 "
         "--alignSJoverhangMin 8   --alignSJDBoverhangMin 5   --sjdbGTFfile {input.gtf}  --sjdbOverhang 100 > {log} 2 >& 1; "
-        "ls -1 {output.bam} > {params.b}"
 
 rule gtf_novel_gtf:
     input:
@@ -131,7 +130,12 @@ rule gtf_novel_gtf:
         bam="alignment/{sample}.STARAligned.out.bam",
         SJ="alignment/{sample}.STARSJ.out.tab"
     output:
-        "gtf/{sample}_gtf_novel.gtf"
+        update_gtf="gtf/{sample}_gtf_novel.gtf",
+        known_gtf="output/{sample}.known.gtf",
+        novel_gtf="output/{sample}.novel.gtf",
+        unrecog_gtf="output/{sample}.unrecog.gtf",
+        detail="output/{sample}.detail.txt",
+        summary="output/{sample}.summary.txt"
     log:
         "logs/gtf_novel_gtf/{sample}.log"
     benchmark:
@@ -141,14 +145,14 @@ rule gtf_novel_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} update-gtf -mg -b {input.bam} -I {input.SJ} {input.novel_gtf} {input.gtf} > {output} 2> {log}"
+        "{params.lr2rmats} update-gtf -mg -b {input.bam} -j {input.SJ} {input.novel_gtf} {input.gtf} -y {output.summary} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf}  > {output.update_gtf} 2> {log}"
 
 rule update_gtf:
     input:
         gtf=config["genome"]["gtf"],
         novel_gtf=expand("gtf/{sample}_gtf_novel.gtf", sample=config["sample"]["long_read"])
     output:
-        config["output"]["gtf"]
+        config["output"]["updated_gtf"]
     log:
         "logs/update_gtf.log"
     benchmark:

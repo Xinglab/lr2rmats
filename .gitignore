@@ -11,6 +11,9 @@ benchmark/*
 alignment/*
 gtf/*
 logs/*
+output/*
+test_data/genome/genome.STAR/*
+test_data/genome/genome.fa.smmi
 
 
 # Precompiled Headers
@@ -31,8 +34,8 @@ logs/*
 *.dylib
 
 # Executables
-lr2gtf
-gdb_lr2gtf
+lr2rmats
+gdb_lr2rmats
 bin/*
 *.exe
 *.out
