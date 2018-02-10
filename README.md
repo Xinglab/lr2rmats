@@ -87,7 +87,7 @@ output:
  
 - `samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1 (***required***).
 
-For single-end read or multiple samples data, please refer to [FAQ](#FAQ). 
+For single-end read or multiple samples data, please refer to [FAQ](#FAQ) #4 and #5. 
 
 ### <a name="output"></a>Output files
 - `updated.gtf`: enhanced gene annotation file. It contains both known annotation(`original.gtf`) and reliable novel transcript information extracted from long and short-read data.
@@ -155,7 +155,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
    second: []
    ```
    
-5. **Q**: How to specify matched pairs of long and short-read data?
+5. **Q**: How to specify matched pairs of long and short-read data for multiple samples?
 
    **A**: You should use uniform name for data from same sample, like this:
    ```
