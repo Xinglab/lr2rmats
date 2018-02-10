@@ -9,15 +9,16 @@
 #include "parse_bam.h"
 
 const char PROG[20] = "lr2rmats";
-const char VERSION[20] = "1.0.0";
-const char DATE[20] = "2017-11-22";
+const char PROG_LONG[100] = "Long read to rMATS";
+const char VERSION[20] = "0.1";
+const char DATE[20] = "2018-02-09";
 const char CONTACT[30] = "yangaoucla@gmail.com";
 
 
 static int usage(void)
 {
     err_printf("\n");
-	err_printf("Program: %s (long read to GTF)\n", PROG);
+	err_printf("Program: %s (%s)\n", PROG, PROG_LONG);
     err_printf("Version: %s, Date: %s\n", VERSION, DATE);
     err_printf("Contact: %s\n", CONTACT);
     err_printf("Usage:   %s <command> [options]\n\n", PROG);
