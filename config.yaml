@@ -1,5 +1,5 @@
 # specify path of input files
-# RELATIVE PATH here will use working directory as their origin).
+# RELATIVE PATH here will use working directory as their origin
 genome:
     fasta: test_data/genome/genome.fa
     gtf: test_data/gtf/original.gtf
@@ -22,7 +22,7 @@ sample:
             #second: []
 
 # specify path of output file
-# RELATIVE PATH here will use working directory as their origin).
+# RELATIVE PATH here will use working directory as their origin
 output:
     updated_gtf: output/updated.gtf # file name of updated GTF
     
