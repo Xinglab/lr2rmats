@@ -76,16 +76,17 @@ output:
     
 ```
 
-### <a name="input"></a>Input files
-- `genome.fa`: genome file in FASTA format (***required***).
+### <a name="input"></a>Input files (__*__ is ***required***)
+- __*__`genome.fa`: genome file in FASTA format.
 
-- `original.gtf`: original existing gene annotation file (***required***).
+- __*__`original.gtf`: original existing gene annotation file.
 
-- `rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped (***optional***).
+- `rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped.
 
-- `samp1_long.fa`: long-read data of sample #1 (***required***).
+- __*__`samp1_long.fa`: long-read data of sample #1.
  
-- `samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1 (***required***).
+- __*__`samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1.
+
 
 For single-end read or multiple samples data, please refer to [FAQ](#FAQ) #4 and #5. 
 
