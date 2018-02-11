@@ -138,7 +138,7 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
 1. **Q**: How many samples are needed for lr2rmats?
 
-   **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2rmats.
+   **A**: There is no limit on sample amount. As long as one sample has matched long and short-read data, it can be provided to lr2rmats. If multiple samples are used as input, the generated GTF annotation will contain the novel information from all samples.
 
 2. **Q**: Do I need to provide read data in FASTA format?
 
