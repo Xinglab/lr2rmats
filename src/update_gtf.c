@@ -552,13 +552,13 @@ int check_short_sj1(int tid, int start, int end, sj_t *sj_group, int sj_n, int i
     int i = i_start, sj_cnt;
     int dis = ugp->ss_dis, min_cnt = ugp->min_sj_cnt;
     while (i < sj_n) {
-        if (sj_group[i].tid > tid || sj_group[i].don > start) return 0;
+        if (sj_group[i].tid > tid || (sj_group[i].tid == tid && sj_group[i].don >= end)) return 0;
         if (abs(sj_group[i].don-start)<=dis && abs(sj_group[i].acc-end)<=dis) {
             if (ugp->use_multi) sj_cnt = sj_group[i].uniq_c + sj_group[i].multi_c;
             else sj_cnt = sj_group[i].uniq_c;
             if (sj_cnt >= min_cnt) return 1;
         }
-        else i++;
+        i++;
     }
     return 0;
 }
@@ -573,7 +573,7 @@ int check_short_sj(trans_t *bam_t, int *sj_map, sj_t *sj_group, int sj_n, int *s
     while (i < sj_n) {
         if (sj_group[i].tid < bam_t->tid || (sj_group[i].tid == bam_t->tid && sj_group[i].acc <= bam_t->start)) {
             i++; *sj_i = i;
-        } else if (sj_group[i].tid > bam_t->tid) return 0;
+        } else if (sj_group[i].tid > bam_t->tid || (sj_group[i].tid == bam_t->tid && sj_group[i].don >= bam_t->end)) return 0;
         else {
             for (j = 0; j < bam_t->exon_n-1; ++j) {
                 if (sj_map[j] == 0 && check_short_sj1(bam_t->tid, bam_t->exon[j].end+1, bam_t->exon[j+1].start-1, sj_group, sj_n, i, ugp) == 0) {
