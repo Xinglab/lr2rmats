@@ -912,9 +912,11 @@ void check_trans(read_trans_t *bam_T, read_trans_t *anno_T, sj_t *sj_group, int 
             } else if (ugp->split_trans) { // has unreliable novel splice junction
                 // split into short transcripts
                 read_trans_t *split_read_trans = split_trans(bam_t);
-                for (j = 0; j < split_read_trans->trans_n; ++j)
+                for (j = 0; j < split_read_trans->trans_n; ++j) {
                     add_read_trans(novel_T, split_read_trans->t[j]);
-                    if (merge_trans(split_read_trans->t+j, updated_T, ugp->ss_dis, ugp->single_exon_ovlp_frac) == 0)  add_read_trans(updated_T, split_read_trans->t[j]);
+                    if (merge_trans(split_read_trans->t+j, updated_T, ugp->ss_dis, ugp->single_exon_ovlp_frac) == 0) 
+                        add_read_trans(updated_T, split_read_trans->t[j]);
+                }
                 read_trans_free(split_read_trans);
             }
         } else { // novel and no_known_site

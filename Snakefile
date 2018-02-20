@@ -63,7 +63,8 @@ rule sam_novel_gtf:
         rRNA=config["genome"]["rRNA"],
         gtf=config["genome"]["gtf"]
     output:
-        "gtf/{sample}_sam_novel.gtf"
+        filtered_bam="alignment/{sample}.filtered.bam",
+        sam_gtf="gtf/{sample}_sam_novel.gtf"
     threads:
         config["novel_gtf"]["threads"]
     log:
@@ -74,7 +75,8 @@ rule sam_novel_gtf:
         lr2rmats=config["exe_files"]["lr2rmats"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads}  2>> {log} | {params.lr2rmats} update-gtf - {input.gtf} 2>> {log} > {output}"
+        "{params.lr2rmats} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
+        "{params.lr2rmats} update-gtf {output.filtered_bam} {input.gtf} 2>> {log} > {output.sam_gtf}"
 
 # merge and sort gtf
 rule new_gtf:
@@ -126,8 +128,9 @@ rule star_map:
 rule gtf_novel_gtf:
     input:
         gtf=config["genome"]["gtf"],
-        novel_gtf="gtf/{sample}_sam_novel.gtf",
-        bam="alignment/{sample}.STARAligned.out.bam",
+        #novel_gtf="gtf/{sample}_sam_novel.gtf",
+        filtered_bam="alignment/{sample}.filtered.bam",
+        #bam="alignment/{sample}.STARAligned.out.bam",
         SJ="alignment/{sample}.STARSJ.out.tab"
     output:
         update_gtf="gtf/{sample}_gtf_novel.gtf",
@@ -145,7 +148,7 @@ rule gtf_novel_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} update-gtf -mg -b {input.bam} -j {input.SJ} {input.novel_gtf} {input.gtf} -y {output.summary} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf}  > {output.update_gtf} 2> {log}"
+        "{params.lr2rmats} update-gtf -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf}  > {output.update_gtf} 2> {log}"
 
 rule update_gtf:
     input:
