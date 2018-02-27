@@ -75,7 +75,8 @@ float exon_overlap_frac(exon_t e1, exon_t e2)
     if (e1.start > e2.end || e2.start > e1.end) return 0.0;
     int start1 = e1.start, end1 = e1.end;
     int start2 = e2.start, end2 = e2.end;
-    int overlap_len = end1 - start2 + 1 > 0 ? end1 - start2 + 1 : end2 - start1 + 1;
+    //int overlap_len = end1 - start2 + 1 > 0 ? end1 - start2 + 1 : end2 - start1 + 1;
+    int overlap_len = MIN_OF_TWO(end1, end2) - MAX_OF_TWO(start1, start2) + 1; 
     int min_len = MIN_OF_TWO(end1 - start1 + 1, end2 - start2 + 1);
     return (overlap_len / (min_len + 0.0));
 }

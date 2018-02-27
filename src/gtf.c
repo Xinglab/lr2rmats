@@ -650,7 +650,7 @@ int print_read_trans(read_trans_t *read_trans, chr_name_t *cname, char *src, FIL
                 fprintf(out, "%s\t%s\t%s\t%d\t%d\t%d\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, score_min+score_step*read_trans->t[i].cov, "+-"[read_trans->t[i].exon[j].is_rev], name+1);
         }
     }
-    err_printf("Total transcript: %d\n", read_trans->trans_n);
+    //err_printf("Total transcript: %d\n", read_trans->trans_n);
     return 0;
 }
 
