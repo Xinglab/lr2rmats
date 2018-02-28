@@ -49,7 +49,7 @@ void sort_exon(trans_t *t)
 }
 
 // check if t1 is identical to t2 or fully contains t2
-int check_iden(trans_t *t1, trans_t *t2, int dis) {
+int check_iden(trans_t *t1, trans_t *t2, int ss_dis, int end_dis) {
     //if (t1->is_rev != t2->is_rev) return 0;
     trans_t *l, *s; int full_match = -1, partial_match = -1;
     if (t1->exon_n > t2->exon_n) {
@@ -64,23 +64,27 @@ int check_iden(trans_t *t1, trans_t *t2, int dis) {
     }
     int i, j, un_iden=-1;
     if (full_match == 0) {
-        for (i = 0, j = 0; i < l->exon_n-1 && j < s->exon_n-1; ++i, ++j) {
-            if (abs(l->exon[i].end - s->exon[j].end) > dis) return un_iden;
-            if (abs(l->exon[i+1].start - s->exon[j+1].start) > dis) return un_iden;
+        if (abs(l->exon[0].start - s->exon[0].start) > end_dis) return un_iden;
+        for (i = 0; i < l->exon_n-1; ++i) {
+            if (abs(l->exon[i].end - s->exon[i].end) > ss_dis) return un_iden;
+            if (abs(l->exon[i+1].start - s->exon[i+1].start) > ss_dis) return un_iden;
         }
+        if (abs(l->exon[l->exon_n-1].end - s->exon[s->exon_n-1].end) > end_dis) return un_iden;
         return full_match;
     } else {
         partial_match = un_iden;
+        if (abs(l->exon[0].start - s->exon[0].start) > end_dis) return un_iden;
         for (i = 0; i < l->exon_n-1; ++i) {
-            if ((abs(l->exon[i].end - s->exon[0].end) <= dis) && (abs(l->exon[i+1].start - s->exon[1].start) <= dis)) {
+            if ((abs(l->exon[i].end - s->exon[0].end) <= ss_dis) && (abs(l->exon[i+1].start - s->exon[1].start) <= ss_dis)) {
                 partial_match = 2;
                 for (i = i+1, j = 1; i < l->exon_n-1 && j < s->exon_n-1; ++i, ++j) {
-                    if (abs(l->exon[i].end - s->exon[j].end) > dis) return un_iden;
-                    if (abs(l->exon[i+1].start - s->exon[j+1].start) > dis) return un_iden;
+                    if (abs(l->exon[i].end - s->exon[j].end) > ss_dis) return un_iden;
+                    if (abs(l->exon[i+1].start - s->exon[j+1].start) > ss_dis) return un_iden;
                 }
                 break;
             }
         }
+        if (abs(l->exon[l->exon_n-1].end - s->exon[s->exon_n-1].end) > end_dis) return un_iden;
         return partial_match;
     }
 }

@@ -119,6 +119,7 @@ int print_read_trans(read_trans_t *novel_T, chr_name_t *cname, char *src, FILE *
 #define INTRON_MIN_LEN 3
 #define INTER_EXON_MIN_LEN 3
 #define SPLICE_DISTANCE 0
+#define END_DISTANCE 0x7fffffff
 #define MIN_INTRON_NUM 0
 #define ANCHOR_MIN_LEN 1 // for annotated sj
 #define UNIQ_MIN 0 // for annotated sj
@@ -139,6 +140,6 @@ int print_read_trans(read_trans_t *novel_T, chr_name_t *cname, char *src, FILE *
 #define ALL_MIN3 1    // AT/AC, GT/AT all-map
 
 
-int check_iden(trans_t *t1, trans_t *t2, int dis);
+int check_iden(trans_t *t1, trans_t *t2, int ss_dis, int end_dis);
 
 #endif
