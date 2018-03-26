@@ -555,72 +555,6 @@ int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T)
     read_trans_free1(t);
     return T->trans_n;
 }
-// merge overlapping gene into one complex
-// sorted with chr and start
-// exon sorted by start
-int read_gene_group(char *fn, chr_name_t *cname, gene_group_t *gg)
-{
-    err_func_format_printf(__func__, "read gene annotation from GTF file ...\n");
-    FILE *gtf = fopen(fn, "r");
-    char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], gene_name[1024], gene_id[1024], trans_name[1024], trans_id[1024], tag[20];
-    gene_t *cur_g=0; trans_t *cur_t=0; exon_t *cur_e=0;
-    gg->gene_n = 0;
-    int last_tid=-1, last_start=-1, last_end=-1;
-
-    while (fgets(line, 1024, gtf) != NULL) {
-        if (line[0] == '#') continue;
-        sscanf(line, "%s\t%*s\t%s\t%d\t%d\t%*s\t%c\t%*s\t%[^\n]", ref, type, &start, &end, &strand, add_info);
-        int tid = get_chr_id(cname, ref);
-        uint8_t is_rev = (strand == '-' ? 1 : 0);
-        strcpy(tag, "gene_id"); gtf_add_info(add_info, tag, gene_id);
-        strcpy(tag, "gene_name"); gtf_add_info(add_info, tag, gene_name);
-        strcpy(tag, "transcript_id"); gtf_add_info(add_info, tag, trans_id);
-        strcpy(tag, "transcript_name"); gtf_add_info(add_info, tag, trans_name);
-
-        if (strcmp(type, "gene") == 0) { // new gene starts old gene ends
-            if (tid == last_tid &&  start < last_end) {
-                if (start < last_start) {
-                    last_start = start;
-                    cur_g->start = start;
-                }
-                if (end > last_end) {
-                    last_end = end;
-                    cur_g->end = end;
-                }
-                continue;
-            }
-            last_tid = tid, last_start = start, last_end = end;
-            if (++gg->gene_n == gg->gene_m) gg = gene_group_realloc(gg);
-            cur_g = gg->g + gg->gene_n-1;
-            cur_g->tid = tid; cur_g->is_rev = is_rev;
-            cur_g->start = start; cur_g->end = end;
-            strcpy(cur_g->gene_name, gene_name); strcpy(cur_g->gene_id, gene_id);
-            cur_g->trans_n = 0;
-        } else if (strcmp(type, "transcript") == 0) { // new trans starts, old trans ends
-            if (cur_g == 0) err_fatal_core(__func__, "GTF format error in %s.\n", fn);
-            if (++cur_g->trans_n == cur_g->trans_m) cur_g = trans_realloc(cur_g);
-            cur_t = cur_g->trans + cur_g->trans_n-1;
-            cur_t->tid = tid; cur_t->is_rev = is_rev;
-            cur_t->start = start; cur_t->end = end;
-            strcpy(cur_t->trans_name, trans_name); strcpy(cur_t->trans_id, trans_id);
-            cur_t->exon_n = 0;
-        } else if (strcmp(type, "exon") == 0) { // new exon starts, old exon ends
-            if (cur_t == 0) err_fatal_core(__func__, "GTF format error in %s.\n", fn);
-            // add exon to gg
-            if (++cur_t->exon_n == cur_t->exon_m) cur_t = exon_realloc(cur_t);
-            cur_e = cur_t->exon + cur_t->exon_n-1;
-            cur_e->tid = tid; cur_e->is_rev = is_rev;
-            cur_e->start = start; cur_e->end = end;
-        }
-    }
-    // reverse '-' transcript
-    reverse_exon_order(gg);
-    // sort with cname
-    qsort(gg->g, gg->gene_n, sizeof(gene_t), gene_group_comp);
-    err_fclose(gtf);
-    err_func_format_printf(__func__, "read gene annotation from GTF file done!\n");
-    return gg->gene_n;
-}
 
 int print_trans(trans_t t, chr_name_t *cname, char *src, FILE *out)
 {
@@ -654,7 +588,7 @@ int print_read_trans(read_trans_t *read_trans, chr_name_t *cname, char *src, FIL
                 fprintf(out, "%s\t%s\t%s\t%d\t%d\t%d\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, score_min+score_step*read_trans->t[i].cov, "+-"[read_trans->t[i].exon[j].is_rev], name+1);
         }
     }
-    //err_printf("Total transcript: %d\n", read_trans->trans_n);
+    err_func_format_printf(__func__, "Total transcript: %d\n", read_trans->trans_n);
     return 0;
 }
 
