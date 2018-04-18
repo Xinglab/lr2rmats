@@ -137,6 +137,7 @@ rule gtf_novel_gtf:
         known_gtf="output/{sample}.known.gtf",
         novel_gtf="output/{sample}.novel.gtf",
         unrecog_gtf="output/{sample}.unrecog.gtf",
+        bam_gtf="output/{sample}.bam.gtf",
         detail="output/{sample}.detail.txt",
         summary="output/{sample}.summary.txt",
         exon_bed="output/{sample}.novel_exon.bed"
@@ -149,7 +150,7 @@ rule gtf_novel_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} update-gtf -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
+        "{params.lr2rmats} update-gtf -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -a {output.bam_gtf} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
 
 rule update_gtf:
     input:

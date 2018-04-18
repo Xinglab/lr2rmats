@@ -117,6 +117,7 @@ int print_read_trans(read_trans_t *novel_T, chr_name_t *cname, char *src, FILE *
 // for filtering splice-junction
 #define INTRON_MIN_LEN 3
 #define INTER_EXON_MIN_LEN 3
+#define DELETION_MAX_LEN 50
 #define SPLICE_DISTANCE 0
 #define END_DISTANCE 0x7fffffff
 #define MIN_INTRON_NUM 0

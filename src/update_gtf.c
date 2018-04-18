@@ -47,6 +47,7 @@ int update_gtf_usage(void)
     err_printf("Function options:\n\n");
     err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
     err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
+    err_printf("         -t --max-delet   [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
     err_printf("         -d --distance    [INT]    consider same if distance between two splice site is not bigger than d. [%d]\n", SPLICE_DISTANCE);
     err_printf("         -D --DISTANCE    [INT]    consider same if distance between two start/end site is not bigger than D. [%d]\n", END_DISTANCE);
     err_printf("         -f --frac        [INT]    consider same if overlapping between two single-exon transcript is bigger than f. [%.2f]\n", SING_OVLP_FRAC);
@@ -979,7 +980,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:s:d:D:f:l:o:E:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:s:d:D:f:l:o:E:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -999,6 +1000,7 @@ int update_gtf(int argc, char *argv[])
                       break;
             case 'e': ugp->min_exon = atoi(optarg); break;
             case 'i': ugp->min_intron = atoi(optarg); break;
+            case 't': ugp->max_delet = atoi(optarg); break;
             case 'd': ugp->ss_dis = atoi(optarg); break;
             case 'D': ugp->end_dis = atoi(optarg); break;
             case 'f': ugp->single_exon_ovlp_frac = atof(optarg); break;
@@ -1046,7 +1048,7 @@ int update_gtf(int argc, char *argv[])
         if ((h = sam_hdr_read(in)) == NULL) err_fatal(__func__, "Couldn't read header for \"%s\"\n", argv[optind]);
         bam_set_cname(h, cname);
         b = bam_init1(); 
-        read_bam_trans(in, h, b, ugp->min_exon, ugp->min_intron, bam_T);
+        read_bam_trans(in, h, b, ugp->min_exon, ugp->min_intron, ugp->max_delet, bam_T);
         bam_destroy1(b);
     } else { // gtf input
         if ((h = sam_hdr_read(ugp->gtf_bam)) == NULL) err_fatal(__func__, "Couldn't read header of provided BAM file.\n");

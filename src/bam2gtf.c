@@ -20,14 +20,15 @@ int bam2gtf_usage(void)
     err_printf("\n");
     err_printf("Usage:   %s bam2gtf [option] <in.bam> > out.gtf\n\n", PROG);
     err_printf("Options:\n\n");
-    err_printf("         -e --exon-min    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
-    err_printf("         -i --intron-len  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
+    err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
+    err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
+    err_printf("         -t --max-delet   [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
     err_printf("         -s --source      [STR]    source field in GTF, program, database or project name. [%s]\n", PROG);
 	err_printf("\n");
 	return 1;
 }
 
-int gen_exon(trans_t *t, bam1_t *b, uint32_t *c, int n_cigar, int exon_min, int intron_len)
+int gen_exon(trans_t *t, bam1_t *b, uint32_t *c, int n_cigar, int exon_min, int intron_len, int deletion_max)
 {
     t->exon_n = 0;
     int tid = b->core.tid; int start = b->core.pos+1, end = start-1;/*1-base*/ uint8_t is_rev, *p;
@@ -47,7 +48,12 @@ int gen_exon(trans_t *t, bam1_t *b, uint32_t *c, int n_cigar, int exon_min, int 
                 }
                 end += l;
                 break;
-            case BAM_CDEL : // D(0 1)
+            case BAM_CDEL : // D(0 1) 
+                if (l > deletion_max) {
+                    if (t->exon_n == 0 || (end-start+1) >= exon_min)
+                        add_exon(t, tid, start, end, is_rev);
+                    start = end + l + 1;
+                }
                 end += l;
                 break;
             case BAM_CMATCH: // 1 1
@@ -71,22 +77,22 @@ int gen_exon(trans_t *t, bam1_t *b, uint32_t *c, int n_cigar, int exon_min, int 
     return 0;
 }
 
-int gen_trans(bam1_t *b, trans_t *t, int exon_min, int intron_len)
+int gen_trans(bam1_t *b, trans_t *t, int exon_min, int intron_len, int deletion_max)
 {
     if (bam_unmap(b)) return 0;
 
     uint32_t *c = bam_get_cigar(b); int n_cigar = b->core.n_cigar;
-    gen_exon(t, b, c, n_cigar, exon_min, intron_len);
+    gen_exon(t, b, c, n_cigar, exon_min, intron_len, deletion_max);
     return 1;
 }
 
-int read_bam_trans(samFile *in, bam_hdr_t *h, bam1_t *b, int min_exon, int min_intron, read_trans_t *T)
+int read_bam_trans(samFile *in, bam_hdr_t *h, bam1_t *b, int min_exon, int min_intron, int max_delet, read_trans_t *T)
 {
     trans_t *t;
     int sam_ret = sam_read1(in, h, b) ;
     while (sam_ret >= 0) {
         t = trans_init(1);
-        gen_trans(b, t, min_exon, min_intron); 
+        gen_trans(b, t, min_exon, min_intron, max_delet); 
         // for bam_trans
         t->full = 0, t->lfull = 0, t->lnoth = 1, t->rfull = 0, t->rnoth = 1;
         t->known = 0; t->has_known_site = 0; t->has_unreliable_junction = 0; t->partial_read = 0; //t->polyA = 0;
@@ -113,15 +119,16 @@ const struct option bam2gtf_long_opt [] = {
 
 int bam2gtf(int argc, char *argv[])
 {
-    int c, exon_min=INTER_EXON_MIN_LEN, intron_len=INTRON_MIN_LEN;
+    int c, exon_min = INTER_EXON_MIN_LEN, intron_len = INTRON_MIN_LEN, deletion_max = DELETION_MAX_LEN;
     char src[100]; strcpy(src, PROG);
-	while ((c = getopt_long(argc, argv, "s:e:i:", bam2gtf_long_opt, NULL)) >= 0)
+	while ((c = getopt_long(argc, argv, "s:e:i:t:", bam2gtf_long_opt, NULL)) >= 0)
     {
         switch(c)
         {
             case 'e': exon_min = atoi(optarg); break;
-            case 's': strcpy(src, optarg); break;
             case 'i': intron_len = atoi(optarg); break;
+            case 't': deletion_max = atoi(optarg); break;
+            case 's': strcpy(src, optarg); break;
             default: err_printf("Error: unknown option: %s.\n", optarg);
                      return bam2gtf_usage();
         }
@@ -141,7 +148,7 @@ int bam2gtf(int argc, char *argv[])
     trans_t *t = trans_init(1);
 
     while (sam_read1(in, h, b) >= 0) {
-        if (gen_trans(b, t, exon_min, intron_len)) {
+        if (gen_trans(b, t, exon_min, intron_len, deletion_max)) {
             char *name = bam_get_qname(b);
             set_trans_name(t, name, name, name, name);
             print_trans(*t, cname, src, stdout);
