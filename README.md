@@ -100,6 +100,8 @@ In addition to the updated annotation file, more detailed information are also p
 
 - `novel.gtf`: all novel transcripts from long-read that are different from any of the annotation transcript. Here, only novel transcripts that have at least one known splice site are kept. 
 
+- `novel_exon.bed`: bed file of all novel exons that are added in the `updated.gtf`. 
+
 - `unrecog.gtf`: all unrecognized transcripts from long-read that have no known splice site.
 
 - `detail.txt`: detailed information for each long-read derived transcript.

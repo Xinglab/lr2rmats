@@ -27,7 +27,7 @@ update_gtf_para *update_gtf_init_para(void) {
     ugp->sj_fp = NULL; ugp->use_multi = 0; ugp->min_sj_cnt = MIN_SJ_CNT;
     ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->full_level = 5/*most relax*/; ugp->split_trans = 0; ugp->end_dis = END_DISTANCE;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
-    ugp->out_gtf_fp = stdout; ugp->bam_gtf_fp = NULL; ugp->bam_detail_fp = NULL; ugp->known_gtf_fp = NULL; ugp->novel_gtf_fp = NULL; ugp->unrecog_gtf_fp = NULL; ugp->summary_fp = NULL;
+    ugp->out_gtf_fp = stdout; ugp->exon_bed_fp = NULL; ugp->bam_gtf_fp = NULL; ugp->bam_detail_fp = NULL; ugp->known_gtf_fp = NULL; ugp->novel_gtf_fp = NULL; ugp->unrecog_gtf_fp = NULL; ugp->summary_fp = NULL;
     strcpy(ugp->source, PROG);
 
     return ugp;
@@ -60,6 +60,7 @@ int update_gtf_usage(void)
 
     err_printf("Output options:\n\n");
     err_printf("         -o --output      [STR]    updated GTF file. [stdout]\n");
+    err_printf("         -E --exon-bed    [STR]    updated novel exon file in bed format. [NULL]\n");
     err_printf("         -a --bam-gtf     [STR]    bam-derived transcript GTF file. [NULL]\n");
     err_printf("         -A --bam-detial  [STR]    detailed information of each bam-derived transcript. [NULL]\n");
     err_printf("         -k --known-gtf   [STR]    bam-derived known transcript GTF file. [NULL]\n");
@@ -193,7 +194,7 @@ simp_gene_t *add_simp_gene(simp_gene_t *G, simp_gene_t *g, int *G_n, int *G_m) {
 
 int merge_exon1(exon_t *e1, exon_t *e2)
 {
-    if (e1->tid != e2->tid || e1->is_rev != e2->is_rev || e1->start != e2->start || e1->end != e2->end) return 0;
+    if (e1->tid != e2->tid || e1->start != e2->start || e1->end != e2->end) return 0;
     else return 1;
 }
 
@@ -201,7 +202,10 @@ int merge_exon(exon_t *E, int E_n, exon_t *e)
 {
     int i; 
     for (i = E_n-1; i >= 0; --i) {
-        if (merge_exon1(e, E+i)) return 1;
+        if (merge_exon1(e, E+i)) {
+            E[i].score++;
+            return 1;
+        }
         if (e->tid > E[i].tid) return 0;
     }
     return 0;
@@ -214,16 +218,15 @@ exon_t *add_simp_exon(exon_t *E, exon_t *e, int *E_n, int *E_m) {
             E = (exon_t*)_err_realloc(E, *E_m * sizeof(exon_t));
         }
         E[*E_n].tid = e->tid; E[*E_n].is_rev = e->is_rev;
-        E[*E_n].start = e->start; E[*E_n].end = e->end;
+        E[*E_n].start = e->start; E[*E_n].end = e->end; E[*E_n].score = 1;
         (*E_n)++;
     }
-
     return E;
 }
 
 int merge_site1(simp_site_t *s1, simp_site_t *s2)
 {
-    if (s1->tid != s2->tid || s1->is_rev != s2->is_rev || s1->site != s2->site) return 0;
+    if (s1->tid != s2->tid || s1->site != s2->site) return 0;
     else return 1;
 }
 
@@ -252,7 +255,7 @@ simp_site_t *add_simp_site(simp_site_t *S, simp_site_t *s, int *S_n, int *S_m) {
 
 int merge_sj1(sj_t *s1, sj_t *s2)
 {
-    if (s1->tid != s2->tid || s1->is_rev != s2->is_rev || s1->don != s2->don || s1->acc != s2->acc) return 0;
+    if (s1->tid != s2->tid || s1->don != s2->don || s1->acc != s2->acc) return 0;
     else return 1;
 }
 
@@ -260,8 +263,10 @@ int merge_sj(sj_t *S, int S_n, sj_t *s)
 {
     int i; 
     for (i = S_n-1; i >= 0; --i) {
-        if (merge_sj1(s, S+i)) return 1;
-        if (s->tid > S[i].tid) return 0;
+        if (merge_sj1(s, S+i)) {
+            S[i].score++;
+            return 1;
+        } if (s->tid > S[i].tid) return 0;
     }
     return 0;
 }
@@ -273,7 +278,7 @@ sj_t *add_simp_sj(sj_t *S, sj_t *s, int *S_n, int *S_m) {
             S = (sj_t*)_err_realloc(S, *S_m * sizeof(sj_t));
         }
         S[*S_n].tid = s->tid; S[*S_n].is_rev = s->is_rev;
-        S[*S_n].don = s->don; S[*S_n].acc = s->acc;
+        S[*S_n].don = s->don; S[*S_n].acc = s->acc; S[*S_n].score = 1;
         (*S_n)++;
     }
     return S;
@@ -403,7 +408,7 @@ int print_bam_detail_trans(read_trans_t *bam_T, chr_name_t *cname, FILE *fp)
     return 0;
 }
 
-int print_trans_summary(read_trans_t *anno_T, read_trans_t *updated_T, read_trans_t *bam_T, update_gtf_para *ugp, FILE *fp)
+int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *updated_T, read_trans_t *bam_T, update_gtf_para *ugp, FILE *summary_fp, FILE *novel_exon_fp)
 {
     int i, j;
     // annotation
@@ -506,50 +511,62 @@ int print_trans_summary(read_trans_t *anno_T, read_trans_t *updated_T, read_tran
     uniq_known_trans_n = uniq_known_T->trans_n; uniq_reliable_novel_trans_n = uniq_reliable_T->trans_n;
     uniq_unreliable_novel_trans_n = uniq_unreliable_T->trans_n; uniq_unrecog_trans_n = uniq_unrecog_T->trans_n;
 
-    free(G); free(novel_exon); free(novel_don_site); free(novel_acc_site); free(novel_junction);
-    free(g); free(s); free(sj);
-    read_trans_free(uniq_known_T), read_trans_free(uniq_unreliable_T), read_trans_free(uniq_reliable_T), read_trans_free(uniq_unrecog_T);
     // 2. novel_site/exon/junction, unreliable_junction
     // 2.1 total count of novel_site/exon/junction, unreliable_junction
     // 2.2 unique count of novel_site/exon/junction, unreliable_junction
     // 2.3 novel_site/exon/junction count, unreliable_junction -> trans_count
 
-    // print
-    // annotation
-    fprintf(fp, "==== Annotaion ====\n");
-    fprintf(fp, "%s\t%d\n", "Genes_of_annotation_GTF", anno_gene_n);
-    fprintf(fp, "%s\t%d\n", "Transcripts_of_annotation_GTF", anno_trans_n);
-    fprintf(fp, "\n===================\n");
-    // updated information
-    fprintf(fp, "\n==== Updated information ====\n");
-    fprintf(fp, "%s\t%d\n", "Updated_Genes", updated_gene_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Transcripts", updated_full_trans_n+updated_partial_trans_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Full-read_Transcripts", updated_full_trans_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Partial-read_Transcripts", updated_partial_trans_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Exons", updated_novel_exon_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Sites", updated_novel_don_site_n+updated_novel_acc_site_n);
-    fprintf(fp, "%s\t%d\n", "Added_Novel_Splice_Junctions", updated_novel_junction_n);
-    fprintf(fp, "\n=============================\n");
-    // known information
-    fprintf(fp, "\n==== Known information ====\n");
-    fprintf(fp, "%s\t%d\n", "Known_Transcripts_from_BAM", known_trans_n);
-    fprintf(fp, "%s\t%d\n", "Genes_of_Known_Transcripts_from_BAM", known_gene_n);
-    fprintf(fp, "%s\t%d\n", "Uniq_Known_Transcripts_from_BAM", uniq_known_trans_n);
-    fprintf(fp, "\n===========================\n");
-    // novel information
-    fprintf(fp, "\n==== Novel information ====\n");
-    fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM", reliable_novel_trans_n+unreliable_novel_trans_n);
-    fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_All_Reliable_Junction", reliable_novel_trans_n);
-    fprintf(fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_All_Reliable_Junction", uniq_reliable_novel_trans_n);
-    fprintf(fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_Unreliable_Junction", unreliable_novel_trans_n);
-    fprintf(fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_Unreliable_Junction", uniq_unreliable_novel_trans_n);
-    fprintf(fp, "\n===========================\n");
-    // unrecognized information
-    fprintf(fp, "\n==== Unrecognized information ====\n");
-    fprintf(fp, "%s\t%d\n", "Unrecognized_Transcript_from_BAM", unrecog_trans_n);
-    fprintf(fp, "%s\t%d\n", "Uniq_Unrecognized_Transcript_from_BAM", uniq_unrecog_trans_n);
-    fprintf(fp, "\n==================================\n");
+    if (summary_fp) { // print summary information
+        // annotation
+        fprintf(summary_fp, "==== Annotaion ====\n");
+        fprintf(summary_fp, "%s\t%d\n", "Genes_of_annotation_GTF", anno_gene_n);
+        fprintf(summary_fp, "%s\t%d\n", "Transcripts_of_annotation_GTF", anno_trans_n);
+        fprintf(summary_fp, "\n===================\n");
+        // updated information
+        fprintf(summary_fp, "\n==== Updated information ====\n");
+        fprintf(summary_fp, "%s\t%d\n", "Updated_Genes", updated_gene_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Transcripts", updated_full_trans_n+updated_partial_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Full-read_Transcripts", updated_full_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Partial-read_Transcripts", updated_partial_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Exons", updated_novel_exon_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Sites", updated_novel_don_site_n+updated_novel_acc_site_n);
+        fprintf(summary_fp, "%s\t%d\n", "Added_Novel_Splice_Junctions", updated_novel_junction_n);
+        fprintf(summary_fp, "\n=============================\n");
+        // known information
+        fprintf(summary_fp, "\n==== Known information ====\n");
+        fprintf(summary_fp, "%s\t%d\n", "Known_Transcripts_from_BAM", known_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Genes_of_Known_Transcripts_from_BAM", known_gene_n);
+        fprintf(summary_fp, "%s\t%d\n", "Uniq_Known_Transcripts_from_BAM", uniq_known_trans_n);
+        fprintf(summary_fp, "\n===========================\n");
+        // novel information
+        fprintf(summary_fp, "\n==== Novel information ====\n");
+        fprintf(summary_fp, "%s\t%d\n", "Novel_Transcript_from_BAM", reliable_novel_trans_n+unreliable_novel_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_All_Reliable_Junction", reliable_novel_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_All_Reliable_Junction", uniq_reliable_novel_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Novel_Transcript_from_BAM_with_Unreliable_Junction", unreliable_novel_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Uniq_Novel_Transcript_from_BAM_with_Unreliable_Junction", uniq_unreliable_novel_trans_n);
+        fprintf(summary_fp, "\n===========================\n");
+        // unrecognized information
+        fprintf(summary_fp, "\n==== Unrecognized information ====\n");
+        fprintf(summary_fp, "%s\t%d\n", "Unrecognized_Transcript_from_BAM", unrecog_trans_n);
+        fprintf(summary_fp, "%s\t%d\n", "Uniq_Unrecognized_Transcript_from_BAM", uniq_unrecog_trans_n);
+        fprintf(summary_fp, "\n==================================\n");
+    }
+    if (novel_exon_fp) { // print novel exon information
+        // chrom    start0base  end1base    name    count   strand
+        for (i = 0; i < updated_novel_exon_n; ++i) {
+            fprintf(novel_exon_fp, "%s\t%d\t%d\texon_%d\t%d\t%c\n", h->target_name[novel_exon[i].tid], novel_exon[i].start-1, novel_exon[i].end, i, novel_exon[i].score, "+-"[novel_exon[i].is_rev]);
+        }
+    }
+    // TODO
+    /*if (novel_sj_fp) { // print novel splice-junction information
+    }
+    if (novel_site_fp) { // print novel splice-site information
+    }*/
 
+    free(G); free(novel_exon); free(novel_don_site); free(novel_acc_site); free(novel_junction);
+    free(g); free(s); free(sj);
+    read_trans_free(uniq_known_T), read_trans_free(uniq_unreliable_T), read_trans_free(uniq_reliable_T), read_trans_free(uniq_unrecog_T);
     return 0;
 }
 
@@ -962,7 +979,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:s:d:D:f:l:o:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:s:d:D:f:l:o:E:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -992,6 +1009,7 @@ int update_gtf(int argc, char *argv[])
             case 'J': ugp->min_sj_cnt = atoi(optarg); break;
 
             case 'o': ugp->out_gtf_fp = fopen(optarg, "w"); break;
+            case 'E': ugp->exon_bed_fp = fopen(optarg, "w"); break;
             case 'a': ugp->bam_gtf_fp = fopen(optarg, "w"); break;
             case 'A': ugp->bam_detail_fp = fopen(optarg, "w"); break;
             case 'k': ugp->known_gtf_fp = fopen(optarg, "w"); break;
@@ -1055,7 +1073,7 @@ int update_gtf(int argc, char *argv[])
     if (ugp->novel_gtf_fp) print_read_trans(novel_T, cname, ugp->source, ugp->novel_gtf_fp);
     if (ugp->unrecog_gtf_fp) print_read_trans(unrecog_T, cname, ugp->source, ugp->unrecog_gtf_fp);
     // summary of novel statistics
-    if (ugp->summary_fp) print_trans_summary(anno_T, updated_T, bam_T, ugp, ugp->summary_fp);
+    if (ugp->summary_fp || ugp->exon_bed_fp) print_trans_summary(h, anno_T, updated_T, bam_T, ugp, ugp->summary_fp, ugp->exon_bed_fp);
 
     chr_name_free(cname);
     read_trans_free(bam_T); read_trans_free(updated_T); 
@@ -1068,6 +1086,7 @@ int update_gtf(int argc, char *argv[])
     if (in) sam_close(in); 
     if (ugp->gtf_bam) sam_close(ugp->gtf_bam);
     if (ugp->sj_fp) err_fclose(ugp->sj_fp);
+    if (ugp->exon_bed_fp) err_fclose(ugp->exon_bed_fp);
     if (ugp->bam_gtf_fp) err_fclose(ugp->bam_gtf_fp);
     if (ugp->bam_detail_fp) err_fclose(ugp->bam_detail_fp);
     if (ugp->known_gtf_fp) err_fclose(ugp->known_gtf_fp);
