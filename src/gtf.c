@@ -622,6 +622,13 @@ void print_gene(FILE *out, char *src, gene_t *gene, char **cname) {
     }
 }
 
+read_trans_t *min_trans_set(read_trans_t *trans_T) {
+    read_trans_t *min_trans_T;
+    // for each trans cluster, build one splice-graph
+    // generate minimal trans set from splice-graph with Heaviest-Bundling
+    return min_trans_T;
+}
+
 /*void print_gtf_trans(gene_t g, bam_hdr_t *h, char *src, FILE *out)
 {
     if (g.trans_n <= g.anno_tran_n) return;

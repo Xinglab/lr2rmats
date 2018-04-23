@@ -25,8 +25,9 @@ update_gtf_para *update_gtf_init_para(void) {
     update_gtf_para *ugp = (update_gtf_para*)_err_malloc(sizeof(update_gtf_para));
     ugp->input_mode = 0/*bam*/; ugp->gtf_bam = NULL;
     ugp->sj_fp = NULL; ugp->use_multi = 0; ugp->min_sj_cnt = MIN_SJ_CNT;
-    ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->full_level = 5/*most relax*/; ugp->split_trans = 0; ugp->end_dis = END_DISTANCE;
+    ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->max_delet = DELETION_MAX_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->full_level = 5/*most relax*/; ugp->split_trans = 0; ugp->end_dis = END_DISTANCE;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
+    ugp->keep_min_set = 0;
     ugp->out_gtf_fp = stdout; ugp->exon_bed_fp = NULL; ugp->bam_gtf_fp = NULL; ugp->bam_detail_fp = NULL; ugp->known_gtf_fp = NULL; ugp->novel_gtf_fp = NULL; ugp->unrecog_gtf_fp = NULL; ugp->summary_fp = NULL;
     strcpy(ugp->source, PROG);
 
@@ -39,36 +40,37 @@ int update_gtf_usage(void)
     err_printf("Usage:   %s update-gtf [option] <in.bam/in.gtf> <old.gtf> > new.gtf\n\n", PROG);
     err_printf("Notice:  the BAM and GTF files should be sorted in advance.\n\n");
     err_printf("Input options:\n\n");
-    err_printf("         -m --input-mode  [STR]    format of input file <in.bam/in.gtf>, BAM file(b) or GTF file(g). [b]\n");
-    err_printf("         -b --bam         [STR]    for GTF input <in.gtf>, BAM file is needed to obtain BAM header information. [NULL]\n");
-    err_printf("         -j --sj          [STR]    junction information file output by STAR(*.out.tab). [NULL]\n");
+    err_printf("         -m --input-mode   [STR]    format of input file <in.bam/in.gtf>, BAM file(b) or GTF file(g). [b]\n");
+    err_printf("         -b --bam          [STR]    for GTF input <in.gtf>, BAM file is needed to obtain BAM header information. [NULL]\n");
+    err_printf("         -j --sj           [STR]    junction information file output by STAR(*.out.tab). [NULL]\n");
     err_printf("\n");
 
     err_printf("Function options:\n\n");
-    err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
-    err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
-    err_printf("         -t --max-delet   [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
-    err_printf("         -d --distance    [INT]    consider same if distance between two splice site is not bigger than d. [%d]\n", SPLICE_DISTANCE);
-    err_printf("         -D --DISTANCE    [INT]    consider same if distance between two start/end site is not bigger than D. [%d]\n", END_DISTANCE);
-    err_printf("         -f --frac        [INT]    consider same if overlapping between two single-exon transcript is bigger than f. [%.2f]\n", SING_OVLP_FRAC);
-    err_printf("         -s --split-trans          split read on unreliable junctions. [NULL]\n");
+    err_printf("         -e --min-exon     [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
+    err_printf("         -i --min-intron   [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
+    err_printf("         -t --max-delet    [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
+    err_printf("         -d --distance     [INT]    consider same if distance between two splice site is not bigger than d. [%d]\n", SPLICE_DISTANCE);
+    err_printf("         -D --DISTANCE     [INT]    consider same if distance between two start/end site is not bigger than D. [%d]\n", END_DISTANCE);
+    err_printf("         -f --frac         [INT]    consider same if overlapping between two single-exon transcript is bigger than f. [%.2f]\n", SING_OVLP_FRAC);
+    err_printf("         -s --split-trans           split read on unreliable junctions. [False]\n");
     //err_printf("         -s --match-strand         only transcript of matched strand will be 
-    err_printf("         -M --use-multi            use junction information of multi-mapped read. [False]\n");
+    err_printf("         -M --use-multi             use junction information of multi-mapped read. [False]\n");
     err_printf("         -J --min-junc-cnt [INT]    minimum short-read junction count of novel junction. [%d]\n", MIN_SJ_CNT);
-    err_printf("         -l --full-length [INT]    level of strict criterion for considering full-length transcript. \n");
-    err_printf("                                   (1->5, most strict->most relaxed) [%d]\n", 5);
+    err_printf("         -l --full-length  [INT]    level of strict criterion for considering full-length transcript. \n");
+    err_printf("                                    (1->5, most strict->most relaxed) [%d]\n", 5);
     err_printf("\n");
 
     err_printf("Output options:\n\n");
-    err_printf("         -o --output      [STR]    updated GTF file. [stdout]\n");
-    err_printf("         -E --exon-bed    [STR]    updated novel exon file in bed format. [NULL]\n");
-    err_printf("         -a --bam-gtf     [STR]    bam-derived transcript GTF file. [NULL]\n");
-    err_printf("         -A --bam-detial  [STR]    detailed information of each bam-derived transcript. [NULL]\n");
-    err_printf("         -k --known-gtf   [STR]    bam-derived known transcript GTF file. [NULL]\n");
-    err_printf("         -v --novel-gtf   [STR]    bam-derived novel transcript GTF file. [NULL]\n");
-    err_printf("         -u --unrecog     [STR]    bam-derived unrecognized transcript GTF file. [NULL]\n");
-    err_printf("         -y --summary     [STR]    Staticstic summary of bam-derived transcript. [NULL]\n");
-    err_printf("         -S --source      [STR]    \'source\' field in GTF: program, database or project name. [%s]\n", PROG);
+    err_printf("         -o --output       [STR]    updated GTF file. [stdout]\n");
+    err_printf("         -n --min-output            only keep the minimal set of novel transcripts in the updated GTF file. [False]\n");
+    err_printf("         -E --exon-bed     [STR]    updated novel exon file in bed format. [NULL]\n");
+    err_printf("         -a --bam-gtf      [STR]    bam-derived transcript GTF file. [NULL]\n");
+    err_printf("         -A --bam-detial   [STR]    detailed information of each bam-derived transcript. [NULL]\n");
+    err_printf("         -k --known-gtf    [STR]    bam-derived known transcript GTF file. [NULL]\n");
+    err_printf("         -v --novel-gtf    [STR]    bam-derived novel transcript GTF file. [NULL]\n");
+    err_printf("         -u --unrecog      [STR]    bam-derived unrecognized transcript GTF file. [NULL]\n");
+    err_printf("         -y --summary      [STR]    Staticstic summary of bam-derived transcript. [NULL]\n");
+    err_printf("         -S --source       [STR]    \'source\' field in GTF: program, database or project name. [%s]\n", PROG);
     err_printf("\n");
     return 1;
 }
@@ -218,7 +220,7 @@ exon_t *add_simp_exon(exon_t *E, exon_t *e, int *E_n, int *E_m) {
             *E_m <<= 1;
             E = (exon_t*)_err_realloc(E, *E_m * sizeof(exon_t));
         }
-        E[*E_n].tid = e->tid; E[*E_n].is_rev = e->is_rev;
+        E[*E_n].tid = e->tid; E[*E_n].is_rev = e->is_rev; E[*E_n].exon_type = e->exon_type;
         E[*E_n].start = e->start; E[*E_n].end = e->end; E[*E_n].score = 1;
         (*E_n)++;
     }
@@ -441,6 +443,12 @@ int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *update
         // novel_exon
         for (j = 0; j < t->exon_n; ++j) {
             if (t->novel_exon_flag[j]) {
+                if (t->exon_n > 1) {
+                    if (j == 0 || j == t->exon_n-1)
+                        t->exon[j].exon_type = 0;
+                    else
+                        t->exon[j].exon_type = 1;
+                } else t->exon[j].exon_type = 2;
                 novel_exon = add_simp_exon(novel_exon, t->exon+j, &updated_novel_exon_n, &novel_exon_m);
             }
         }
@@ -556,7 +564,7 @@ int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *update
     if (novel_exon_fp) { // print novel exon information
         // chrom    start0base  end1base    name    count   strand
         for (i = 0; i < updated_novel_exon_n; ++i) {
-            fprintf(novel_exon_fp, "%s\t%d\t%d\texon_%d\t%d\t%c\n", h->target_name[novel_exon[i].tid], novel_exon[i].start-1, novel_exon[i].end, i, novel_exon[i].score, "+-"[novel_exon[i].is_rev]);
+            fprintf(novel_exon_fp, "%s\t%d\t%d\t%c_exon_%d\t%d\t%c\n", h->target_name[novel_exon[i].tid], novel_exon[i].start-1, novel_exon[i].end, "TIS"[novel_exon[i].exon_type], i, novel_exon[i].score, "+-"[novel_exon[i].is_rev]);
         }
     }
     // TODO
@@ -980,7 +988,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:s:d:D:f:l:o:E:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:s:d:D:f:l:o:nE:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -1011,6 +1019,7 @@ int update_gtf(int argc, char *argv[])
             case 'J': ugp->min_sj_cnt = atoi(optarg); break;
 
             case 'o': ugp->out_gtf_fp = fopen(optarg, "w"); break;
+            case 'n': ugp->keep_min_set = 1; break;
             case 'E': ugp->exon_bed_fp = fopen(optarg, "w"); break;
             case 'a': ugp->bam_gtf_fp = fopen(optarg, "w"); break;
             case 'A': ugp->bam_detail_fp = fopen(optarg, "w"); break;
@@ -1065,6 +1074,7 @@ int update_gtf(int argc, char *argv[])
 
     // identify novel transcript
     check_trans(bam_T, anno_T, sj_group, sj_n, updated_T, known_T, novel_T, unrecog_T, ugp);
+    // if (ugp->keep_min_set) updated_T = min_trans_set(updated_T);
 
     // print novel transcript
     print_read_trans(updated_T, cname, ugp->source, ugp->out_gtf_fp);

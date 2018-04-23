@@ -4,7 +4,7 @@
 
 typedef struct {
     int input_mode; samFile *gtf_bam;
-    int min_exon, min_intron, ss_dis, end_dis;
+    int min_exon, min_intron, deletion_max, ss_dis, end_dis;
     float single_exon_ovlp_frac;
     FILE *out_gtf_fp;
     char source[1024];
