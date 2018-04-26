@@ -100,7 +100,6 @@ int merge_trans1(trans_t *t, trans_t *T, int ss_dis, int end_dis)
     int ret = check_iden(t, T, ss_dis, end_dis);
     if (ret == 0) { // fully identical
         T->cov++;
-
         if (t->exon[0].start < T->exon[0].start)  {
             T->exon[0].start = t->exon[0].start;
             T->start = t->exon[0].start;
@@ -201,12 +200,12 @@ int merge_exon1(exon_t *e1, exon_t *e2)
     else return 1;
 }
 
-int merge_exon(exon_t *E, int E_n, exon_t *e)
+int merge_exon(exon_t *E, int E_n, exon_t *e, int cov)
 {
     int i; 
     for (i = E_n-1; i >= 0; --i) {
         if (merge_exon1(e, E+i)) {
-            E[i].score++;
+            E[i].score += cov;
             return 1;
         }
         if (e->tid > E[i].tid) return 0;
@@ -214,14 +213,14 @@ int merge_exon(exon_t *E, int E_n, exon_t *e)
     return 0;
 }
 
-exon_t *add_simp_exon(exon_t *E, exon_t *e, int *E_n, int *E_m) {
-    if (! merge_exon(E, *E_n, e)) {
+exon_t *add_simp_exon(exon_t *E, exon_t *e, int cov, int *E_n, int *E_m) {
+    if (! merge_exon(E, *E_n, e, cov)) {
         if (*E_n == *E_m) {
             *E_m <<= 1;
             E = (exon_t*)_err_realloc(E, *E_m * sizeof(exon_t));
         }
         E[*E_n].tid = e->tid; E[*E_n].is_rev = e->is_rev; E[*E_n].exon_type = e->exon_type;
-        E[*E_n].start = e->start; E[*E_n].end = e->end; E[*E_n].score = 1;
+        E[*E_n].start = e->start; E[*E_n].end = e->end; E[*E_n].score = cov;
         (*E_n)++;
     }
     return E;
@@ -449,7 +448,7 @@ int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *update
                     else
                         t->exon[j].exon_type = 1;
                 } else t->exon[j].exon_type = 2;
-                novel_exon = add_simp_exon(novel_exon, t->exon+j, &updated_novel_exon_n, &novel_exon_m);
+                novel_exon = add_simp_exon(novel_exon, t->exon+j, t->cov, &updated_novel_exon_n, &novel_exon_m);
             }
         }
         // novel don site

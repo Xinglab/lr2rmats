@@ -18,7 +18,7 @@ void exon_free(exon_t *e) { free(e); }
 trans_t *trans_init(int n) {
     trans_t *t = (trans_t*)_err_calloc(n, sizeof(trans_t));
     strcpy(t->trans_name, "");
-    t->exon_n = 0; t->exon_m = 0;
+    t->exon_n = 0; t->exon_m = 0; t->cov = 1;
     //t->exon = exon_init(2);
     return t;
 }
@@ -143,7 +143,7 @@ void add_read_trans(read_trans_t *r, trans_t t)
     int i;
     trans_t *new_t = r->t + r->trans_n;
     new_t->exon_n = 0;
-    new_t->cov = 1;
+    new_t->cov = t.cov;
     for (i = 0; i < t.exon_n; ++i)
         add_exon(new_t, t.exon[i].tid, t.exon[i].start, t.exon[i].end, t.exon[i].is_rev);
     new_t->tid = t.tid; new_t->is_rev = t.is_rev;
@@ -151,8 +151,6 @@ void add_read_trans(read_trans_t *r, trans_t t)
 
     strcpy(new_t->gene_id, t.gene_id); strcpy(new_t->gene_name, t.gene_name);
     strcpy(new_t->trans_id, t.trans_id); strcpy(new_t->trans_name, t.trans_name);
-
-    new_t->cov = t.cov;
 
     new_t->full = t.full, new_t->lfull = t.lfull, new_t->lnoth = t.lnoth, new_t->rfull = t.rfull, new_t->rnoth = t.rnoth; 
     new_t->known = t.known, new_t->has_known_site = t.has_known_site, new_t->has_unreliable_junction = t.has_unreliable_junction, new_t->partial_read = t.partial_read;
@@ -167,7 +165,7 @@ void modify_read_trans(trans_t *T, trans_t t)
 {
     int i;
     T->exon_n = 0;
-    T->cov = 1;
+    T->cov = t.cov;
     for (i = 0; i < t.exon_n; ++i)
         add_exon(T, t.exon[i].tid, t.exon[i].start, t.exon[i].end, t.exon[i].is_rev);
     T->tid = t.tid; T->is_rev = t.is_rev;
@@ -176,7 +174,6 @@ void modify_read_trans(trans_t *T, trans_t t)
     strcpy(T->gene_id, t.gene_id); strcpy(T->gene_name, t.gene_name);
     strcpy(T->trans_id, t.trans_id); strcpy(T->trans_name, t.trans_name);
 
-    T->cov = t.cov;
 
     T->full = t.full, T->lfull = t.lfull, T->lnoth = t.lnoth, T->rfull = t.rfull, T->rnoth = t.rnoth; 
     T->known = t.known, T->has_known_site = t.has_known_site, T->has_unreliable_junction = t.has_unreliable_junction, T->partial_read = t.partial_read;
@@ -568,24 +565,25 @@ int print_trans(trans_t t, chr_name_t *cname, char *src, FILE *out)
 // tid source feature start end score(.) strand phase(.) additional
 int print_read_trans(read_trans_t *read_trans, chr_name_t *cname, char *src, FILE *out)
 {
-    int i, j; char tmp[1024], name[1024];
-    int score_min = 450, score_step=50;
+    int i, j; char tmp[1024], exon_attr[1024], trans_attr[1024];
+    //int score_min = 450, score_step=50;
 
     for (i = 0; i < read_trans->trans_n; ++i) {
-        memset(tmp, 0, 1024); memset(name, 0, 1024);
-        if (strlen(read_trans->t[i].gene_id) > 0) sprintf(tmp, " gene_id \"%s\";", read_trans->t[i].gene_id), strcat(name, tmp);
-        if (strlen(read_trans->t[i].trans_id) > 0) sprintf(tmp, " transcript_id \"%s\";", read_trans->t[i].trans_id), strcat(name, tmp);
-        if (strlen(read_trans->t[i].gene_name) > 0) sprintf(tmp, " gene_name \"%s\";", read_trans->t[i].gene_name), strcat(name, tmp);
-        if (strlen(read_trans->t[i].trans_name) > 0) sprintf(tmp, " transcript_name \"%s\";", read_trans->t[i].trans_name), strcat(name, tmp);
+        memset(tmp, 0, 1024); memset(exon_attr, 0, 1024);
+        if (strlen(read_trans->t[i].gene_id) > 0) sprintf(tmp, " gene_id \"%s\";", read_trans->t[i].gene_id), strcat(exon_attr, tmp);
+        if (strlen(read_trans->t[i].trans_id) > 0) sprintf(tmp, " transcript_id \"%s\";", read_trans->t[i].trans_id), strcat(exon_attr, tmp);
+        if (strlen(read_trans->t[i].gene_name) > 0) sprintf(tmp, " gene_name \"%s\";", read_trans->t[i].gene_name), strcat(exon_attr, tmp);
+        if (strlen(read_trans->t[i].trans_name) > 0) sprintf(tmp, " transcript_name \"%s\";", read_trans->t[i].trans_name), strcat(exon_attr, tmp);
+        strcpy(trans_attr, exon_attr); sprintf(tmp, " transcript_cov \"%d\";", read_trans->t[i].cov), strcat(trans_attr, tmp);
 
-        fprintf(out, "%s\t%s\t%s\t%d\t%d\t.\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].tid], src, "transcript", read_trans->t[i].start, read_trans->t[i].end, "+-"[read_trans->t[i].is_rev], name+1);
+        fprintf(out, "%s\t%s\t%s\t%d\t%d\t.\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].tid], src, "transcript", read_trans->t[i].start, read_trans->t[i].end, "+-"[read_trans->t[i].is_rev], trans_attr+1);
 
         if (read_trans->t[i].is_rev) { // '-' strand
             for (j = read_trans->t[i].exon_n-1; j >= 0; --j)
-                fprintf(out, "%s\t%s\t%s\t%d\t%d\t%d\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, score_min+score_step*read_trans->t[i].cov, "+-"[read_trans->t[i].exon[j].is_rev], name+1);
+                fprintf(out, "%s\t%s\t%s\t%d\t%d\t.\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, "+-"[read_trans->t[i].exon[j].is_rev], exon_attr+1);
         } else { // '+' strand
             for (j = 0; j < read_trans->t[i].exon_n; ++j)
-                fprintf(out, "%s\t%s\t%s\t%d\t%d\t%d\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, score_min+score_step*read_trans->t[i].cov, "+-"[read_trans->t[i].exon[j].is_rev], name+1);
+                fprintf(out, "%s\t%s\t%s\t%d\t%d\t.\t%c\t.\t%s\n", cname->chr_name[read_trans->t[i].exon[j].tid], src, "exon", read_trans->t[i].exon[j].start, read_trans->t[i].exon[j].end, "+-"[read_trans->t[i].exon[j].is_rev], exon_attr+1);
         }
     }
     //err_func_format_printf(__func__, "Total transcript: %d\n", read_trans->trans_n);
