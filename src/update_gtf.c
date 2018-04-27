@@ -563,7 +563,7 @@ int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *update
     if (novel_exon_fp) { // print novel exon information
         // chrom    start0base  end1base    name    count   strand
         for (i = 0; i < updated_novel_exon_n; ++i) {
-            fprintf(novel_exon_fp, "%s\t%d\t%d\t%c_exon_%d\t%d\t%c\n", h->target_name[novel_exon[i].tid], novel_exon[i].start-1, novel_exon[i].end, "TIS"[novel_exon[i].exon_type], i, novel_exon[i].score, "+-"[novel_exon[i].is_rev]);
+            fprintf(novel_exon_fp, "%s\t%d\t%d\t%c_exon\t%d\t%c\n", h->target_name[novel_exon[i].tid], novel_exon[i].start-1, novel_exon[i].end, "TIS"[novel_exon[i].exon_type], novel_exon[i].score, "+-"[novel_exon[i].is_rev]
         }
     }
     // TODO
