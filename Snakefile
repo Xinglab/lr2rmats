@@ -150,14 +150,16 @@ rule gtf_novel_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} update-gtf -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -a {output.bam_gtf} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
+        "{params.lr2rmats} update-gtf -s -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -a {output.bam_gtf} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
 
 rule update_gtf:
     input:
         gtf=config["genome"]["gtf"],
-        novel_gtf=expand("gtf/{sample}_gtf_novel.gtf", sample=config["sample"]["long_read"])
+        novel_gtf=expand("gtf/{sample}_gtf_novel.gtf", sample=config["sample"]["long_read"]),
+        sam=expand("alignment/{sample}.minimap.sam", sample=config["sample"]["long_read"]),
     output:
-        config["output"]["updated_gtf"]
+        uniq_gtf=temp("gtf/uniq.gtf"),
+        updated_gtf=config["output"]["updated_gtf"]
     log:
         "logs/update_gtf.log"
     benchmark:
@@ -167,6 +169,7 @@ rule update_gtf:
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "cp {input.gtf} gtf/tmp.gtf 2> {log}; "
-        "cat {input.novel_gtf} >> gtf/tmp.gtf 2> {log}; "
-        "{params.sort_gtf} gtf/tmp.gtf {output} 2>> {log}; rm gtf/tmp.gtf"
+        "cat {input.novel_gtf} >> gtf/tmp.gtf; "
+        "{params.lr2rmats} unique-gtf -mg -b {input.sam[0]} gtf/tmp.gtf > {output.uniq_gtf} 2> {log}; "
+        "cat {input.gtf} {output.uniq_gtf} > gtf/tmp.gtf 2>> {log}; "
+        "{params.sort_gtf} gtf/tmp.gtf {output.updated_gtf} 2>> {log}; rm gtf/tmp.gtf"
