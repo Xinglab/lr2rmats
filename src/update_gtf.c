@@ -832,7 +832,7 @@ read_trans_t *split_trans(trans_t *bam_t)
     int split_trans_n = 0, last_exon_i = 0, trans_i=0, has_novel = 0, has_known = 0;
     for (i = 0; i < bam_t->exon_n-1; ++i)
         split_trans_n += bam_t->unreliable_junction_flag[i];
-    read_trans_t *split_trans = read_trans_init(split_trans_n);
+    read_trans_t *split_trans = read_trans_init(split_trans_n+1);
     trans_t *t;
     for (i = 0; i < bam_t->exon_n-1; ++i) {
         if (bam_t->novel_junction_flag[i]) has_novel = 1;
@@ -987,7 +987,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:s:d:D:f:l:o:nE:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:sd:D:f:l:o:nE:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
