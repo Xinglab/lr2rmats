@@ -60,7 +60,6 @@ rule minimap_map:
 rule sam_novel_gtf:
     input:
         sam="alignment/{sample}.minimap.sam",
-        rRNA=config["genome"]["rRNA"],
         gtf=config["genome"]["gtf"]
     output:
         filtered_bam="alignment/{sample}.filtered.bam",
@@ -72,10 +71,14 @@ rule sam_novel_gtf:
     benchmark:
         "benchmark/{sample}.novel_gtf.benchmark.txt"
     params:
+        rm_gtf=config["genome"]["rm_gtf"],
+        aln_cov=config["lr2rmats"]["aln_cov"],
+        iden_frac=config["lr2rmats"]["iden_frac"],
+        sec_rat=config["lr2rmats"]["sec_rat"],
         lr2rmats=config["exe_files"]["lr2rmats"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} filter {input.sam} -r {input.rRNA}  2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
+        "{params.lr2rmats} filter {input.sam} {params.rm_gtf} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
         "{params.lr2rmats} update-gtf {output.filtered_bam} {input.gtf} 2>> {log} > {output.sam_gtf}"
 
 # merge and sort gtf
@@ -101,10 +104,10 @@ rule new_gtf:
 # STAR mapping for short reads
 rule star_map:
     input:
-        genome=config["genome"]["star_idx"],
-        gtf="gtf/{sample}_new.gtf",
         read1=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["first"],
-        read2=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["second"]
+        read2=lambda wildcards: config["sample"]["short_read"][wildcards.sample]["second"],
+        genome=config["genome"]["star_idx"],
+        gtf="gtf/{sample}_new.gtf"
     output:
         bam="alignment/{sample}.STARAligned.out.bam",
         SJ="alignment/{sample}.STARSJ.out.tab"
@@ -146,11 +149,13 @@ rule gtf_novel_gtf:
     benchmark:
         "benchmark/{sample}_gtf_novel_gtf.benchmark.txt"
     params:
+        sup_cnt=config["lr2rmats"]["sup_cnt"],
+        split_trans=config["lr2rmats"]["split_trans"],
         lr2rmats=config["exe_files"]["lr2rmats"],
         sort_gtf=config["exe_files"]["sort_gtf"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} update-gtf -s -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -a {output.bam_gtf} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
+        "{params.lr2rmats} update-gtf {params.split_trans} -J {params.sup_cnt} -j {input.SJ} {input.filtered_bam} {input.gtf} -y {output.summary} -a {output.bam_gtf} -A  {output.detail} -k {output.known_gtf} -v {output.novel_gtf} -u {output.unrecog_gtf} -E {output.exon_bed}  > {output.update_gtf} 2> {log}"
 
 rule update_gtf:
     input:
