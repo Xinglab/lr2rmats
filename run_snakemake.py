@@ -24,7 +24,7 @@ def parse_argv(args, cfg_temp):
         for i in range(0, n_samp_long):
             n_rep = int(in_list.readline().split()[0])
             for j in range(0, n_rep):
-                cfg['sample']['long_read']['samp' + str(samp_i)] = in_list.readline().split()[0]
+                cfg['sample']['long_read']['samp' + str(samp_i)] = os.path.abspath(in_list.readline().split()[0])
                 samp_i += 1
 
     ## short reads
@@ -39,8 +39,8 @@ def parse_argv(args, cfg_temp):
                 if '#' in line: line = line[:line.index('#')]
 
                 cfg['sample']['short_read']['samp' + str(samp_i)] = {}
-                cfg['sample']['short_read']['samp' + str(samp_i)]['first'] = line.split()[0]
-                cfg['sample']['short_read']['samp' + str(samp_i)]['second'] = line.split()[1] if len(
+                cfg['sample']['short_read']['samp' + str(samp_i)]['first'] = os.path.abspath(line.split()[0])
+                cfg['sample']['short_read']['samp' + str(samp_i)]['second'] = os.path.abspath(line.split()[1]) if len(
                     line.split()) >= 2 else []
                 samp_i += 1
 
