@@ -14,7 +14,8 @@ extern const char PROG[20];
 unique_gtf_para *unique_gtf_init_para(void) {
     unique_gtf_para *ugp = (unique_gtf_para*)_err_malloc(sizeof(unique_gtf_para));
     ugp->input_mode = 0/*bam*/; ugp->gtf_bam = NULL;
-    ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->end_dis = END_DISTANCE;
+    ugp->force_strand = 0;
+    ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->end_dis = END_DISTANCE; ugp->deletion_max = DELETION_MAX_LEN;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
     ugp->out_gtf_fp = stdout;
     strcpy(ugp->source, PROG);
@@ -24,7 +25,7 @@ unique_gtf_para *unique_gtf_init_para(void) {
 int unique_gtf_usage(void)
 {
     err_printf("\n");
-    err_printf("Usage:   %s unique-gtf [option] <in.bam/in.gtf> > unique.gtf\n\n", PROG);
+    err_printf("Usage:   %s unique-gtf [option] <in.sorted.bam/in.sorted.gtf> > unique.gtf\n\n", PROG);
     err_printf("Notice:  the BAM and GTF files should be sorted in advance.\n\n");
     err_printf("Input options:\n\n");
     err_printf("         -m --input-mode  [STR]    format of input file <in.bam/in.gtf>, BAM file(b) or GTF file(g). [b]\n");
@@ -32,6 +33,7 @@ int unique_gtf_usage(void)
     err_printf("\n");
 
     err_printf("Function options:\n\n");
+    err_printf("         -s --force-strand         force to match strand when merging transcripts. [False]\n");
     err_printf("         -e --min-exon    [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
     err_printf("         -i --min-intron  [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
     err_printf("         -t --max-delet   [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
@@ -51,6 +53,7 @@ const struct option unique_gtf_long_opt [] = {
     { "input-mode", 1, NULL, 'm' },
     { "bam", 1, NULL, 'b' },
 
+    { "force-strand", 0, NULL, 's' },
     { "min-exon", 1, NULL, 'e' },
     { "min-intron", 1, NULL, 'i' },
     { "distance", 1, NULL, 'd' },
@@ -69,7 +72,7 @@ int uniq_trans(read_trans_t *bam_T, read_trans_t *uniq_T, unique_gtf_para *ugp) 
     int i;
     for (i = 0; i < bam_T->trans_n; ++i) {
         trans_t *t = bam_T->t + i;
-        if (merge_trans(t, uniq_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+        if (merge_trans(t, uniq_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
             add_read_trans(uniq_T, *t);
     }
 
@@ -80,7 +83,7 @@ int unique_gtf(int argc, char *argv[])
 {
     int c; 
     unique_gtf_para *ugp = unique_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:e:i:d:D:f:o:s:", unique_gtf_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:se:i:d:D:f:o:S:", unique_gtf_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -92,6 +95,7 @@ int unique_gtf(int argc, char *argv[])
                           return unique_gtf_usage();
                       }
                       break;
+            case 's': ugp->force_strand = 1; break;
             case 'e': ugp->min_exon = atoi(optarg); break;
             case 'i': ugp->min_intron = atoi(optarg); break;
             case 't': ugp->deletion_max = atoi(optarg); break;

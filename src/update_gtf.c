@@ -27,7 +27,7 @@ update_gtf_para *update_gtf_init_para(void) {
     ugp->sj_fp = NULL; ugp->use_multi = 0; ugp->min_sj_cnt = MIN_SJ_CNT;
     ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->max_delet = DELETION_MAX_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->full_level = 5/*most relax*/; ugp->split_trans = 0; ugp->end_dis = END_DISTANCE;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
-    ugp->keep_min_set = 0;
+    ugp->keep_min_set = 0; ugp->force_strand = 0;
     ugp->out_gtf_fp = stdout; ugp->exon_bed_fp = NULL; ugp->bam_gtf_fp = NULL; ugp->bam_detail_fp = NULL; ugp->known_gtf_fp = NULL; ugp->novel_gtf_fp = NULL; ugp->unrecog_gtf_fp = NULL; ugp->summary_fp = NULL;
     strcpy(ugp->source, PROG);
 
@@ -46,6 +46,7 @@ int update_gtf_usage(void)
     err_printf("\n");
 
     err_printf("Function options:\n\n");
+    err_printf("         -c --force-strand         force to match strand when merging transcripts. [False]\n");
     err_printf("         -e --min-exon     [INT]    minimum length of internal exon. [%d]\n", INTER_EXON_MIN_LEN);
     err_printf("         -i --min-intron   [INT]    minimum length of intron. [%d]\n", INTRON_MIN_LEN);
     err_printf("         -t --max-delet    [INT]    maximum length of deletion, longer deletion will be considered as intron. [%d]\n", DELETION_MAX_LEN);
@@ -140,11 +141,12 @@ int merge_trans2(trans_t *t, trans_t *T, int end_dis, float single_exon_ovlp_fra
 
 // TODO : remove all the redundant
 // what if t fully contains some transcripts in T ???
-int merge_trans(trans_t *t, read_trans_t *T, int ss_dis, int end_dis, float single_exon_ovlp_frac)
+int merge_trans(trans_t *t, read_trans_t *T, int force_strand, int ss_dis, int end_dis, float single_exon_ovlp_frac)
 {
     int i; 
     for (i = T->trans_n-1; i >= 0; --i) {
         if (t->tid > T->t[i].tid || t->start > T->t[i].end) return 0;
+        if (force_strand && t->is_rev != T->t[i].is_rev) continue;
         if (t->exon_n == 1 && T->t[i].exon_n == 1) {
             if (merge_trans2(t, T->t+i, end_dis, single_exon_ovlp_frac)) return 1;
         } else if (t->exon_n > 1 && T->t[i].exon_n > 1) {
@@ -497,22 +499,22 @@ int print_trans_summary(bam_hdr_t *h, read_trans_t *anno_T, read_trans_t *update
             g->tid = t->tid, g->is_rev = t->is_rev, g->start = t->start, g->end = t->end; strcpy(g->gene_id, t->gene_id);
             G = add_simp_gene(G, g, &known_gene_n, &gene_m);
 
-            if (merge_trans(t, uniq_known_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+            if (merge_trans(t, uniq_known_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
                 add_read_trans(uniq_known_T, *t);
         } else if (t->has_known_site) { // reliable novel and unreliable novel
             if (t->has_unreliable_junction) {
                 unreliable_novel_trans_n++;
 
-                if (merge_trans(t, uniq_unreliable_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+                if (merge_trans(t, uniq_unreliable_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
                     add_read_trans(uniq_unreliable_T, *t);
             } else {
                 reliable_novel_trans_n++;
-                if (merge_trans(t, uniq_reliable_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+                if (merge_trans(t, uniq_reliable_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
                     add_read_trans(uniq_reliable_T, *t);
             }
         } else { // unrecognized
             unrecog_trans_n++;
-            if (merge_trans(t, uniq_unrecog_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+            if (merge_trans(t, uniq_unrecog_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
                 add_read_trans(uniq_unrecog_T, *t);
         }
     }
@@ -938,14 +940,14 @@ void check_trans(read_trans_t *bam_T, read_trans_t *anno_T, sj_t *sj_group, int 
         } else if (bam_t->has_known_site) {
             if (sj_n == 0 || check_with_short_sj(bam_t, sj_group, sj_n, &last_sj_i, ugp)) { // novel junction are supported by short read
                 add_read_trans(novel_T, *bam_t);
-                if (merge_trans(bam_t, updated_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
+                if (merge_trans(bam_t, updated_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
                     add_read_trans(updated_T, *bam_t);
             } else if (ugp->split_trans) { // has unreliable novel splice junction
                 // split into short transcripts
                 read_trans_t *split_read_trans = split_trans(bam_t);
                 for (j = 0; j < split_read_trans->trans_n; ++j) {
                     add_read_trans(novel_T, split_read_trans->t[j]);
-                    if (merge_trans(split_read_trans->t+j, updated_T, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0) 
+                    if (merge_trans(split_read_trans->t+j, updated_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0) 
                         add_read_trans(updated_T, split_read_trans->t[j]);
                 }
                 read_trans_free(split_read_trans);
@@ -961,6 +963,7 @@ const struct option update_long_opt [] = {
     { "bam", 1, NULL, 'b' },
 
     { "sj", 1, NULL, 'j' },
+    { "force-strand", 0, NULL, 'c' },
     { "min-exon", 1, NULL, 'e' },
     { "min-intron", 1, NULL, 'i' },
     { "distance", 1, NULL, 'd' },
@@ -987,7 +990,7 @@ int update_gtf(int argc, char *argv[])
 {
     int c; 
     update_gtf_para *ugp = update_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:sd:D:f:l:o:nE:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:j:J:M:e:i:t:sd:D:f:cl:o:nE:a:A:k:v:u:y:S:", update_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -1012,6 +1015,7 @@ int update_gtf(int argc, char *argv[])
             case 'D': ugp->end_dis = atoi(optarg); break;
             case 'f': ugp->single_exon_ovlp_frac = atof(optarg); break;
 
+            case 'c': ugp->force_strand = 1; break;
             case 's': ugp->split_trans = 1; break;
             case 'l': ugp->full_level = atoi(optarg); break;
             case 'M': ugp->use_multi = 1; break;

@@ -4,6 +4,7 @@
 
 typedef struct {
     int input_mode; samFile *gtf_bam;
+    int force_strand;
     int min_exon, min_intron, deletion_max, ss_dis, end_dis;
     float single_exon_ovlp_frac;
     FILE *out_gtf_fp;
