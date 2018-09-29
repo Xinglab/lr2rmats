@@ -78,7 +78,7 @@ rule sam_novel_gtf:
         lr2rmats=config["exe_files"]["lr2rmats"],
         samtools=config["exe_files"]["samtools"]
     shell:
-        "{params.lr2rmats} filter {input.sam} {params.rm_gtf} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
+        "{params.lr2rmats} filter {input.sam} -r {params.rm_gtf} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
         "{params.lr2rmats} update-gtf {output.filtered_bam} {input.gtf} 2>> {log} > {output.sam_gtf}"
 
 # merge and sort gtf
