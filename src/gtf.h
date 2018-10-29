@@ -108,8 +108,8 @@ gene_group_t *gene_group_realloc(gene_group_t *gg);
 void add_gene(gene_group_t *gg, gene_t g);
 void set_gene_group(gene_group_t *gg);
 void gene_group_free(gene_group_t *gg);
-int read_anno_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T);
-int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T);
+int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T);
+int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T);
 
 int print_trans(trans_t t, chr_name_t *cname, char *src, FILE *out);
 int print_read_trans(read_trans_t *novel_T, chr_name_t *cname, char *src, FILE *out);

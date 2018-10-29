@@ -1071,13 +1071,11 @@ int update_gtf(int argc, char *argv[])
     } else { // gtf input
         if ((h = sam_hdr_read(ugp->gtf_bam)) == NULL) err_fatal(__func__, "Couldn't read header of provided BAM file.\n");
         bam_set_cname(h, cname);
-        FILE *fp = xopen(argv[optind], "r");
-        read_gtf_trans(fp, h, bam_T);
+        read_gtf_trans(argv[optind], h, bam_T);
     }
 
-    FILE *gtf_fp = xopen(argv[optind+1], "r");
     // read all anno-transcript
-    read_anno_trans(gtf_fp, h, anno_T);
+    read_anno_trans(argv[optind+1], h, anno_T);
     // read intron file
     int sj_n = read_sj_group(ugp->sj_fp, cname, &sj_group, sj_m);
 
@@ -1098,7 +1096,7 @@ int update_gtf(int argc, char *argv[])
 
     chr_name_free(cname);
     read_trans_free(bam_T); read_trans_free(updated_T); 
-    trans_free(anno_T); err_fclose(gtf_fp);
+    trans_free(anno_T); 
     read_trans_free(novel_T); read_trans_free(known_T); read_trans_free(unrecog_T); 
     read_trans_free(unique_novel_T); read_trans_free(unique_known_T); read_trans_free(unique_unrecog_T); 
     free(sj_group); gene_group_free(gg);

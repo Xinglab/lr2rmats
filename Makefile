@@ -26,18 +26,20 @@ STAR      = STAR
 SNAKEMAKE = snakemake
 PSUTIL    = psutil
 SAMTOOLS  = samtools
+BEDTOOLS  = bedtools
 MINIMAP2_VERSION = 2.5
 STAR_VERSION = 2.5.3a
 SAMTOOLS_VERSION = 1.6
+BEDTOOLS_VERSION = 2.27.1
 
 .c.o:
 		$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-all:		$(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)  $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR)
+all:		$(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)  $(SNAKEMAKE) $(SAMTOOLS) $(BEDTOOLS) $(MINIMAP2) $(STAR)
 lr2rmats_merge2names:     $(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)
 lr2rmats:     $(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)
 gdb_lr2rmats: $(SOURCE) $(GDB_DEBUG) 
-dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 
+dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) $(BEDTOOLS)
 
 $(SNAKEMAKE):
 	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
@@ -59,6 +61,20 @@ $(SAMTOOLS):
 		else echo "$(SAMTOOLS) is already installed."; \
 		fi; \
 		else echo "$(SAMTOOLS) is already installed."; \
+		fi
+
+$(BEDTOOLS):
+	if [ -z ${shell which ${BEDTOOLS}} ]; then \
+		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
+		if [ ! -f ${BIN_DIR}/${BEDTOOLS} ]; then \
+		wget https://github.com/arq5x/bedtools2/releases/download/v${BEDTOOLS_VERSION}/bedtools-${BEDTOOLS_VERSION}.tar.gz \
+		tar -zxvf bedtools-${BEDTOOLS_VERSION}.tar.gz; \
+		cd bedtools2; make; \
+		cp ${BEDTOOLS} ../${BIN_DIR}; cd .. ; \
+		rm -rf bedtools-${BEDTOOLS_VERSION}.tar.gz ./bedtools-${BEDTOOLS_VERSION}; \
+		else echo "$(BEDTOOLS) is already installed."; \
+		fi; \
+		else echo "$(BEDTOOLS) is already installed."; \
 		fi
 
 $(MINIMAP2):

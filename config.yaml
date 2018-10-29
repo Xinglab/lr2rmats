@@ -3,7 +3,6 @@
 genome:
     fasta: test_data/genome/genome.fa
     gtf: test_data/gtf/original.gtf
-    rm_gtf: test_data/gtf/rRNA.gtf
     # specify existing index file if they are alread built
     # lr2rmats will build them if they do not exist
     minimap_idx: test_data/genome/genome.fa.smmi
@@ -29,6 +28,7 @@ output:
 # add all execuatable files to PATH, or put their ABSOLUTE paths here
 exe_files:
     samtools: samtools
+    bedtools: bedtools
     minimap2: minimap2
     star: STAR
     lr2rmats: lr2rmats
@@ -66,6 +66,7 @@ minimap_map:
     threads: 8
 
 lr2rmats:
+    rm_gtf: test_data/gtf/rRNA.gtf
     aln_cov: 0.67
     iden_frac: 0.75
     sec_rat: 0.98

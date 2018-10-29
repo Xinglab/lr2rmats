@@ -12,7 +12,7 @@
 #define SEC_RATIO 0.98
 
 extern const char PROG[20];
-extern int read_anno_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T);
+extern int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T);
 int filter_usage(void)
 {
     err_printf("\n");
@@ -121,9 +121,7 @@ int bam_filter(int argc, char *argv[])
     // read remove gtf
     read_trans_t *r = read_trans_init(1); 
     if (strcmp(remove_fn, "") != 0) {
-        FILE *fp = xopen(remove_fn, "r"); 
-        read_anno_trans(fp, h, r);
-        err_fclose(fp);
+        read_anno_trans(remove_fn, h, r);
     }
 
     if ((out = sam_open_format("-", "wb", NULL)) == NULL) err_fatal_simple("Cannot open \"-\"\n");

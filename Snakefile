@@ -44,7 +44,9 @@ rule minimap_map:
         genome=config["genome"]["minimap_idx"],
         reads=lambda wildcards: config["sample"]["long_read"][wildcards.sample]
     output:
-        "alignment/{sample}.minimap.sam"
+        sam="alignment/{sample}.minimap.sam",
+        bam=temp("alignment/{sample}.minimap.bam"),
+        bed="alignment/{sample}.minimap.bed"
     threads:
         config["minimap_map"]["threads"]
     log:
@@ -52,9 +54,14 @@ rule minimap_map:
     benchmark:
         "benchmark/{sample}.minimap.benchmark.txt"
     params:
-        minimap=config["exe_files"]["minimap2"]
+        minimap=config["exe_files"]["minimap2"],
+        samtools=config["exe_files"]["samtools"],
+        bedtools=config["exe_files"]["bedtools"]
     shell:
-        "{params.minimap} -ax splice -ub -t {threads} {input.genome} {input.reads} > {output} 2> {log}"
+        "{params.minimap} -ax splice -ub -t {threads} {input.genome} {input.reads} > {output.sam} 2> {log}; "
+        "{params.samtools} view -b {output.sam} > {output.bam}; "
+        "{params.bedtools} bamtobed -bed12 -i {output.bam} > {output.bed} "
+
 
 # filter long read alignment and generate novel GTF file
 rule sam_novel_gtf:

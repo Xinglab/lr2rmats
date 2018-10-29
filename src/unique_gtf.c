@@ -137,8 +137,7 @@ int unique_gtf(int argc, char *argv[])
     } else { // gtf input
         if ((h = sam_hdr_read(ugp->gtf_bam)) == NULL) err_fatal(__func__, "Couldn't read header of provided BAM file.\n");
         bam_set_cname(h, cname);
-        FILE *fp = xopen(argv[optind], "r");
-        read_gtf_trans(fp, h, bam_T);
+        read_gtf_trans(argv[optind], h, bam_T);
     }
 
     // identify novel transcript

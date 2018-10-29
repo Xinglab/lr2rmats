@@ -462,56 +462,97 @@ void reverse_exon_order(gene_group_t *gg) {
 }
 
 // from annotation gtf file extract transcript-exon structure
-int read_anno_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T)
+// only "exon" lines will be processed
+int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
 {
-    char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], name[100], last_gene[100]="";
-    trans_t *t = trans_init(1); int new_gene = 0;
+    err_func_format_printf(__func__, "reading transcript annotation from %s ...\n", fn);
+    FILE *fp = err_xopen_core(__func__, fn, "r");
+    char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], gname[1024], gid[1024], trans_name[1024], trans_id[1024], tag[20];
+    trans_t *t = trans_init(1);
+    char last_tname[100]="\0", last_gname[100]="\0";
+
     while (fgets(line, 1024, fp) != NULL) {
+        if (line[0] == '#') continue;
         sscanf(line, "%s\t%*s\t%s\t%d\t%d\t%*s\t%c\t%*s\t%[^\n]", ref, type, &start, &end, &strand, add_info);
+        if (strcmp(type, "exon") != 0) continue;
         uint8_t is_rev = (strand == '-' ? 1 : 0);
-        if (strcmp(type, "transcript") == 0) {
+        int tid = bam_name2id(h, ref);
+
+        memset(gid, 0, strlen(gid)); strcpy(tag, "gene_id"); gtf_add_info(add_info, tag, gid);
+        memset(gname, 0, strlen(gname)); strcpy(tag, "gene_name"); gtf_add_info(add_info, tag, gname);
+        if (strcmp(gid, "\0")==0 && strcmp(gname, "\0") == 0) err_fatal_core(__func__, "GTF format error in %s. (No gene id or gene name found.\n", fn);
+        if (strcmp(gid, "\0") == 0) strcpy(gid, gname);
+        else if (strcmp(gname, "\0") == 0) strcpy(gname, gid);
+
+        memset(trans_id, 0, strlen(trans_id)); strcpy(tag, "transcript_id"); gtf_add_info(add_info, tag, trans_id);
+        memset(trans_name, 0, strlen(trans_name)); strcpy(tag, "transcript_name"); gtf_add_info(add_info, tag, trans_name);
+        if (strcmp(trans_id, "\0")==0 && strcmp(trans_name, "\0") == 0) err_fatal_core(__func__, "GTF format error in %s. (No transcript id or transcript name found.\n", fn);
+        if (strcmp(trans_id, "\0") == 0) strcpy(trans_id, trans_name);
+        else if (strcmp(trans_name, "\0") == 0) strcpy(trans_name, trans_id);
+
+        T->gene_n += ((strcmp(gname, last_gname) != 0) ? 1 : 0); // new gene
+        if (strcmp(trans_name, last_tname) != 0) { // new trans
             if (t->exon_n >= 1) {
                 set_trans_name(t, NULL, NULL, NULL, NULL);
                 add_anno_trans(T, *t);
-                if (new_gene) T->gene_n++;
-                new_gene = 0;
+
                 read_trans_free1(t);
                 t = trans_init(1);
+                t->tid = tid; t->is_rev = is_rev;
+                t->start = start; t->end = end;
+                strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id);
+                strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
+                t->exon_n = 0;
+                strcpy(last_tname, trans_name);
+                strcpy(last_gname, gname);
             }
-        } else if (strcmp(type, "exon") == 0) { // exon
-            add_exon(t, bam_name2id(h, ref), start, end, is_rev);
-            char tag[20]="gene_id";
-            gtf_add_info(add_info, tag, name); strcpy(t->gene_id, name);
-            strcpy(tag, "gene_name");
-            gtf_add_info(add_info, tag, name); strcpy(t->gene_name, name);
-            if (strcmp(name, last_gene) != 0) {
-                new_gene = 1;
-                strcpy(last_gene, name);
-            }
-            strcpy(tag, "transcript_name");
-            gtf_add_info(add_info, tag, name); strcpy(t->trans_name, name);
-            strcpy(tag, "transcript_id");
-            gtf_add_info(add_info, tag, name); strcpy(t->trans_id, name);
         }
+        add_exon(t, tid, start, end, is_rev);
+        if (start < t->start) t->start = start;
+        if (end > t->end) t->end = end;
     }
     if (t->exon_n != 0) {
         set_trans_name(t, NULL, NULL, NULL, NULL);
         add_anno_trans(T, *t);
-        if (new_gene) T->gene_n++;
     }
     read_trans_free1(t);
+    err_fclose(fp);
+    err_func_format_printf(__func__, "reading transcript annotation from %s done.\n", fn);
     return T->trans_n;
 }
 
 // from gtf file extract transcript-exon structure
-int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T)
+int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
 {
-    char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], name[100];
+    err_func_format_printf(__func__, "reading transcript annotation from %s ...\n", fn);
+    FILE *fp = err_xopen_core(__func__, fn, "r");
+    char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], gname[1024], gid[1024], trans_name[1024], trans_id[1024], tag[20];
     trans_t *t = trans_init(1);
+    char last_tname[100]="\0", last_gname[100]="\0";
+
     while (fgets(line, 1024, fp) != NULL) {
         sscanf(line, "%s\t%*s\t%s\t%d\t%d\t%*s\t%c\t%*s\t%[^\n]", ref, type, &start, &end, &strand, add_info);
+
+        if (line[0] == '#') continue;
+        sscanf(line, "%s\t%*s\t%s\t%d\t%d\t%*s\t%c\t%*s\t%[^\n]", ref, type, &start, &end, &strand, add_info);
+        if (strcmp(type, "exon") != 0) continue;
         uint8_t is_rev = (strand == '-' ? 1 : 0);
-        if (strcmp(type, "transcript") == 0) {
+        int tid = bam_name2id(h, ref);
+
+        memset(gid, 0, strlen(gid)); strcpy(tag, "gene_id"); gtf_add_info(add_info, tag, gid);
+        memset(gname, 0, strlen(gname)); strcpy(tag, "gene_name"); gtf_add_info(add_info, tag, gname);
+        if (strcmp(gid, "\0")==0 && strcmp(gname, "\0") == 0) err_fatal_core(__func__, "GTF format error in %s. (No gene id or gene name found.\n", fn);
+        if (strcmp(gid, "\0") == 0) strcpy(gid, gname);
+        else if (strcmp(gname, "\0") == 0) strcpy(gname, gid);
+
+        memset(trans_id, 0, strlen(trans_id)); strcpy(tag, "transcript_id"); gtf_add_info(add_info, tag, trans_id);
+        memset(trans_name, 0, strlen(trans_name)); strcpy(tag, "transcript_name"); gtf_add_info(add_info, tag, trans_name);
+        if (strcmp(trans_id, "\0")==0 && strcmp(trans_name, "\0") == 0) err_fatal_core(__func__, "GTF format error in %s. (No transcript id or transcript name found.\n", fn);
+        if (strcmp(trans_id, "\0") == 0) strcpy(trans_id, trans_name);
+        else if (strcmp(trans_name, "\0") == 0) strcpy(trans_name, trans_id);
+
+        T->gene_n += ((strcmp(gname, last_gname) != 0) ? 1 : 0); // new gene
+        if (strcmp(trans_name, last_tname) != 0) { // new trans
             if (t->exon_n >= 1) {
                 // for bam_trans
                 t->full = 0, t->lfull = 0, t->lnoth = 1, t->rfull = 0, t->rnoth = 1;
@@ -520,22 +561,24 @@ int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T)
                 t->novel_site_flag = (uint8_t*)_err_malloc((t->exon_n-1)*2 * sizeof(uint8_t)); memset(t->novel_site_flag, 1, (t->exon_n-1)*2);
                 t->novel_junction_flag = (uint8_t*)_err_malloc((t->exon_n-1) * sizeof(uint8_t)); memset(t->novel_junction_flag, 1, t->exon_n-1);
                 t->unreliable_junction_flag = (uint8_t*)_err_malloc((t->exon_n-1) * sizeof(uint8_t)); memset(t->unreliable_junction_flag, 0, t->exon_n-1);
+                
                 set_trans_name(t, NULL, NULL, NULL, NULL);
                 add_read_trans(T, *t);
+
                 read_trans_free1(t);
                 t = trans_init(1);
+                t->tid = tid; t->is_rev = is_rev;
+                t->start = start; t->end = end;
+                strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id);
+                strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
+                t->exon_n = 0;
             }
-        } else if (strcmp(type, "exon") == 0) { // exon
-            add_exon(t, bam_name2id(h, ref), start, end, is_rev);
-            char tag[20]="gene_id";
-            gtf_add_info(add_info, tag, name); strcpy(t->gene_id, name);
-            strcpy(tag, "gene_name");
-            gtf_add_info(add_info, tag, name); strcpy(t->gene_name, name);
-            strcpy(tag, "transcript_name");
-            gtf_add_info(add_info, tag, name); strcpy(t->trans_name, name);
-            strcpy(tag, "transcript_id");
-            gtf_add_info(add_info, tag, name); strcpy(t->trans_id, name);
+            strcpy(last_tname, trans_name);
+            strcpy(last_gname, gname);
         }
+        add_exon(t, tid, start, end, is_rev);
+        if (start < t->start) t->start = start;
+        if (end > t->end) t->end = end;
     }
     if (t->exon_n != 0) {
         // for bam_trans
@@ -550,6 +593,7 @@ int read_gtf_trans(FILE *fp, bam_hdr_t *h, read_trans_t *T)
         add_read_trans(T, *t);
     }
     read_trans_free1(t);
+    err_fclose(fp);
     return T->trans_n;
 }
 
