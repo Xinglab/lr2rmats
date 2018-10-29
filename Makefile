@@ -34,6 +34,7 @@ SAMTOOLS_VERSION = 1.6
 		$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 all:		$(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)  $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR)
+lr2rmats_merge2names:     $(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)
 lr2rmats:     $(HTSLIB) $(BIN) $(GTF2GP) $(GP2BED)
 gdb_lr2rmats: $(SOURCE) $(GDB_DEBUG) 
 dependencies: $(SNAKEMAKE) $(SAMTOOLS) $(MINIMAP2) $(STAR) 

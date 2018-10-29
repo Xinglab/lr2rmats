@@ -71,3 +71,4 @@ lr2rmats:
     sec_rat: 0.98
     sup_cnt: 1
     split_trans: -s
+    full_level: 3

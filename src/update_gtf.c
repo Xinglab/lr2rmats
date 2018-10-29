@@ -148,9 +148,15 @@ int merge_trans(trans_t *t, read_trans_t *T, int force_strand, int ss_dis, int e
         if (t->tid > T->t[i].tid || t->start > T->t[i].end) return 0;
         if (force_strand && t->is_rev != T->t[i].is_rev) continue;
         if (t->exon_n == 1 && T->t[i].exon_n == 1) {
-            if (merge_trans2(t, T->t+i, end_dis, single_exon_ovlp_frac)) return 1;
+            if (merge_trans2(t, T->t+i, end_dis, single_exon_ovlp_frac)) {
+                //fprintf(stderr, "%s\t%s\n", t->trans_name, T->t[i].trans_name);
+                return 1;
+            }
         } else if (t->exon_n > 1 && T->t[i].exon_n > 1) {
-            if (merge_trans1(t, T->t+i, ss_dis, end_dis)) return 1;
+            if (merge_trans1(t, T->t+i, ss_dis, end_dis)) {
+                //fprintf(stderr, "%s\t%s\n", t->trans_name, T->t[i].trans_name);
+                return 1;
+            }
         }
     }
     return 0;

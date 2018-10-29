@@ -14,7 +14,7 @@ extern const char PROG[20];
 unique_gtf_para *unique_gtf_init_para(void) {
     unique_gtf_para *ugp = (unique_gtf_para*)_err_malloc(sizeof(unique_gtf_para));
     ugp->input_mode = 0/*bam*/; ugp->gtf_bam = NULL;
-    ugp->force_strand = 0;
+    ugp->force_strand = 0; ugp->output_intersect = 0;
     ugp->min_exon = INTER_EXON_MIN_LEN, ugp->min_intron = INTRON_MIN_LEN, ugp->ss_dis = SPLICE_DISTANCE; ugp->end_dis = END_DISTANCE; ugp->deletion_max = DELETION_MAX_LEN;
     ugp->single_exon_ovlp_frac = SING_OVLP_FRAC;
     ugp->out_gtf_fp = stdout;
@@ -43,6 +43,7 @@ int unique_gtf_usage(void)
     err_printf("\n");
 
     err_printf("Output options:\n\n");
+    err_printf("         -I --intersect            output intersected transcript. [False]\n");
     err_printf("         -o --output      [STR]    unique GTF file. [stdout]\n");
     err_printf("         -S --source      [STR]    \'source\' field in GTF: program, database or project name. [%s]\n", PROG);
     err_printf("\n");
@@ -61,6 +62,7 @@ const struct option unique_gtf_long_opt [] = {
 
     { "frac", 1, NULL, 'f' },
 
+    { "intersect", 0, NULL, 'I' }, 
     { "output", 1, NULL, 'o' }, 
     { "source", 1, NULL, 's' },
 
@@ -68,12 +70,14 @@ const struct option unique_gtf_long_opt [] = {
     { 0, 0, 0, 0}
 };
 
-int uniq_trans(read_trans_t *bam_T, read_trans_t *uniq_T, unique_gtf_para *ugp) {
+int uniq_trans(read_trans_t *bam_T, read_trans_t *uniq_T, read_trans_t *shared_T, unique_gtf_para *ugp) {
     int i;
     for (i = 0; i < bam_T->trans_n; ++i) {
         trans_t *t = bam_T->t + i;
         if (merge_trans(t, uniq_T, ugp->force_strand, ugp->ss_dis, ugp->end_dis, ugp->single_exon_ovlp_frac) == 0)
             add_read_trans(uniq_T, *t);
+        else 
+            add_read_trans(shared_T, *t);
     }
 
     return uniq_T->trans_n;
@@ -83,7 +87,7 @@ int unique_gtf(int argc, char *argv[])
 {
     int c; 
     unique_gtf_para *ugp = unique_gtf_init_para();
-    while ((c = getopt_long(argc, argv, "m:b:se:i:d:D:f:o:S:", unique_gtf_long_opt, NULL)) >= 0) {
+    while ((c = getopt_long(argc, argv, "m:b:se:i:Id:D:f:o:S:", unique_gtf_long_opt, NULL)) >= 0) {
         switch(c)
         {
             case 'm': if (optarg[0] == 'b') ugp->input_mode=0; 
@@ -103,6 +107,7 @@ int unique_gtf(int argc, char *argv[])
             case 'D': ugp->end_dis = atoi(optarg); break;
             case 'f': ugp->single_exon_ovlp_frac = atof(optarg); break;
 
+            case 'I': ugp->output_intersect = 1; break;
             case 'o': ugp->out_gtf_fp = fopen(optarg, "w"); break;
             case 'S': strcpy(ugp->source, optarg); break;
             default:
@@ -114,9 +119,10 @@ int unique_gtf(int argc, char *argv[])
     if (argc - optind != 1) return unique_gtf_usage();
 
     chr_name_t *cname = chr_name_init();
-    read_trans_t *bam_T, *unique_T;
+    read_trans_t *bam_T, *unique_T, *shared_T;
     bam_T = read_trans_init(1);
     unique_T = read_trans_init(1); 
+    shared_T = read_trans_init(1); 
 
     // read all input-transcript
     samFile *in = NULL; bam_hdr_t *h; 
@@ -136,13 +142,14 @@ int unique_gtf(int argc, char *argv[])
     }
 
     // identify novel transcript
-    uniq_trans(bam_T, unique_T, ugp);
+    uniq_trans(bam_T, unique_T, shared_T, ugp);
 
     // print novel transcript
-    print_read_trans(unique_T, cname, ugp->source, ugp->out_gtf_fp);
+    if (ugp->output_intersect) print_read_trans(shared_T, cname, ugp->source, ugp->out_gtf_fp);
+    else print_read_trans(unique_T, cname, ugp->source, ugp->out_gtf_fp);
 
     chr_name_free(cname);
-    read_trans_free(bam_T); read_trans_free(unique_T);
+    read_trans_free(bam_T); read_trans_free(unique_T); read_trans_free(shared_T);
     err_fclose(ugp->out_gtf_fp); 
     bam_hdr_destroy(h); 
     if (in) sam_close(in); 
