@@ -53,6 +53,10 @@ You can choose to build them separately, like `make minimap2`, `make snakemake`.
 ```
 snakemake -p --snakefile ./Snakefile --configfile ./config.yaml
 ``` 
+Or, when you are using `snakemake` version < `5.2.0`:
+```
+snakemake -p --snakefile ./Snakefile_lagecy --configfile ./config.yaml
+``` 
 Enhanced gene annotation file `output/updated.gtf` will be generated in current working directory, along with some intermediate and log files.
 
 ## <a name="input_output"></a>Input and output
@@ -62,19 +66,27 @@ All the input and output files are specified in the configuration file `config.y
 genome:
     fasta: test_data/genome/genome.fa
     gtf: test_data/gtf/original.gtf
-    rRNA: test_data/gtf/rRNA.gtf
+    ... : ...
 
 sample:
     long_read:
         samp1: test_data/read/samp1_long.fa
+        ... : ...
     short_read:
         samp1:
             first: test_data/read/samp1_short_1.fa
             second: test_data/read/samp1_short_2.fa
+            ... : ...
+    
 # output
 output:
     updated_gtf: output/updated.gtf
-    
+    ... : ...
+
+# other parameters
+lr2rmats:
+    rm_gtf: test_data/gtf/rRNA.gtf
+    ... : ...
 ```
 
 ### <a name="input"></a>Input files (__*__ is ***required***)
@@ -82,12 +94,11 @@ output:
 
 - __*__`original.gtf`: original existing gene annotation file.
 
-- `rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped.
-
 - __*__`samp1_long.fa`: long-read data of sample #1.
  
 - __*__`samp1_short_1.fa` and `samp1_short_2.fa`: paired-end short-read data of sample #1.
 
+- `rRNA.gtf`: GTF file for all the ribosomal RNA. Long-read alignment that overlaps with rRNA will be skipped.
 
 For single-end read or multiple samples data, please refer to [FAQ](#FAQ) #4 and #5. 
 
@@ -130,9 +141,10 @@ snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-confi
 Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2rmats on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
-1. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
-2. Maximum number of cores to be used on a local machine and number of cluster nodes to be used on a computer cluster could be specified with `snakemake` argument `--jobs`(`--cores`, `-j`).
-3. Computing resources for each job could be set in the configuration file. 
+1. Remember to use `Snakefile_lagecy` when you are using old version `Snakemake`(<`5.2.0`). The only difference is that there is no '`directory()`' for STAR index folder. 
+2. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
+3. Maximum number of cores to be used on a local machine and number of cluster nodes to be used on a computer cluster could be specified with `snakemake` argument `--jobs`(`--cores`, `-j`).
+4. Computing resources for each job could be set in the configuration file. 
     * `h_data`: memory size
     * `h_rt`: running time
     * `threads`: number of threads

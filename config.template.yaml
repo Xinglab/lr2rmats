@@ -5,8 +5,8 @@ genome:
     gtf: test_data/gtf/original.gtf
     # specify existing index file if they are alread built
     # lr2rmats will build them if they do not exist
-    minimap_idx: test_data/genome/genome.fa.smmi
-    star_idx: test_data/genome/genome.STAR
+    minimap_idx_file: test_data/genome/genome.fa.smmi
+    star_idx_dir: test_data/genome/genome.STAR
 
 sample:
     long_read:

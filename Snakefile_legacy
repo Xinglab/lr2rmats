@@ -7,7 +7,7 @@ rule star_idx:
     input:
         config["genome"]["fasta"]
     output:
-        directory(config["genome"]["star_idx_dir"])
+        config["genome"]["star_idx_dir"]
     threads:
         config["star_idx"]["threads"]
     log:
