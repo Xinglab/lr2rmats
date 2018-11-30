@@ -498,14 +498,11 @@ int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
 
                 read_trans_free1(t);
                 t = trans_init(1);
-                t->tid = tid; t->is_rev = is_rev;
-                t->start = start; t->end = end;
-                strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id);
-                strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
-                t->exon_n = 0;
-                strcpy(last_tname, trans_name);
-                strcpy(last_gname, gname);
             }
+            t->exon_n = 0; t->tid = tid; t->is_rev = is_rev; t->start = start; t->end = end;
+            strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id); strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
+
+            strcpy(last_tname, trans_name); strcpy(last_gname, gname);
         }
         add_exon(t, tid, start, end, is_rev);
         if (start < t->start) t->start = start;
@@ -567,14 +564,11 @@ int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
 
                 read_trans_free1(t);
                 t = trans_init(1);
-                t->tid = tid; t->is_rev = is_rev;
-                t->start = start; t->end = end;
-                strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id);
-                strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
-                t->exon_n = 0;
             }
-            strcpy(last_tname, trans_name);
-            strcpy(last_gname, gname);
+            t->exon_n = 0; t->tid = tid; t->is_rev = is_rev; t->start = start; t->end = end;
+            strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id); strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
+
+            strcpy(last_tname, trans_name); strcpy(last_gname, gname);
         }
         add_exon(t, tid, start, end, is_rev);
         if (start < t->start) t->start = start;
@@ -594,6 +588,7 @@ int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
     }
     read_trans_free1(t);
     err_fclose(fp);
+    err_func_format_printf(__func__, "reading transcript annotation from %s done.\n", fn);
     return T->trans_n;
 }
 

@@ -55,7 +55,7 @@ snakemake -p --snakefile ./Snakefile --configfile ./config.yaml
 ``` 
 Or, when you are using `snakemake` version < `5.2.0`:
 ```
-snakemake -p --snakefile ./Snakefile_lagecy --configfile ./config.yaml
+snakemake -p --snakefile ./Snakefile_legacy --configfile ./config.yaml
 ``` 
 Enhanced gene annotation file `output/updated.gtf` will be generated in current working directory, along with some intermediate and log files.
 
@@ -141,7 +141,7 @@ snakemake -p --snakefile ./Snakefile --configfile ./config.yaml  --cluster-confi
 Computing jobs will be automatically submitted to the computer cluster. Allocation information are specified in the configuration file `config.yaml`. For more details about how to run lr2rmats on a computer cluster, refer to [More about `snakemake` and configuration file](#snakemake).   
 
 ## <a name="snakemake"></a>More about `snakemake` and configuration file
-1. Remember to use `Snakefile_lagecy` when you are using old version `Snakemake`(<`5.2.0`). The only difference is that there is no '`directory()`' for STAR index folder. 
+1. Remember to use `Snakefile_legacy` when you are using old version `Snakemake`(<`5.2.0`). The only difference is that there is no '`directory()`' for STAR index folder. 
 2. All the input and output files that are in relative path format will use current working directory or directory specified by `snakemake` argument `--directory`(`-d`) as the origin.
 3. Maximum number of cores to be used on a local machine and number of cluster nodes to be used on a computer cluster could be specified with `snakemake` argument `--jobs`(`--cores`, `-j`).
 4. Computing resources for each job could be set in the configuration file. 
