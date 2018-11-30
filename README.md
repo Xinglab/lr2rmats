@@ -42,7 +42,7 @@ Alternatively, you could simply type `make` to build everything you need.
 After the building is done, the path of `lr2rmats/bin` needs to be added to the environment variable PATH.
 
 ### <a name="depen"></a>Dependencies 
-lr2rmats is dependent on following open-source software: [minimap2](https://github.com/lh3/minimap2), [STAR](https://github.com/alexdobin/STAR), [samtools](https://github.com/samtools/samtools) and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
+lr2rmats is dependent on following open-source software: [minimap2(>=2.5)](https://github.com/lh3/minimap2), [STAR(>=2.5.3a)](https://github.com/alexdobin/STAR), [samtools(>=1.6)](https://github.com/samtools/samtools),[bedtools(>=2.27.1)](https://github.com/arq5x/bedtools2/) and [Snakemake(>=3.5.5)](https://snakemake.readthedocs.io/en/stable/).
 
 They will be automatically downloaded and built via `make dependencies` command if they are not installed in your computer.
 
