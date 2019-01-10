@@ -190,9 +190,9 @@ Computing jobs will be automatically submitted to the computer cluster. Allocati
 
 
 ## <a name="contact"></a>Contact
-Yan Gao yangao@ucla.edu
+Yan Gao gaoy1@email.chop.edu
 
-Yi Xing yxing@ucla.edu
+Yi Xing yi.xing@pennmedicine.upenn.edu
 
 [github issues](https://github.com/Xinglab/lr2rmats/issues)
 
