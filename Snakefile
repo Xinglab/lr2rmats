@@ -85,9 +85,12 @@ rule sam_novel_gtf:
         full_level=config["lr2rmats"]["full_level"],
         lr2rmats=config["exe_files"]["lr2rmats"],
         samtools=config["exe_files"]["samtools"]
-    shell:
-        "{params.lr2rmats} filter {input.sam} -r {params.rm_gtf} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; "
-        "{params.lr2rmats} update-gtf {output.filtered_bam} {input.gtf} -l {params.full_level} 2>> {log} > {output.sam_gtf}"
+    run:
+        if {params.rm_gtf} == '':
+            shell("{params.lr2rmats} filter {input.sam} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; ")
+        else:
+            shell("{params.lr2rmats} filter {input.sam} -r {params.rm_gtf} -v {params.aln_cov} -q {params.iden_frac} -s {params.sec_rat} 2> {log} | {params.samtools} sort -@ {threads} > {output.filtered_bam} 2>> {log}; ")
+        shell("{params.lr2rmats} update-gtf {output.filtered_bam} {input.gtf} -l {params.full_level} 2>> {log} > {output.sam_gtf}")
 
 # merge and sort gtf
 rule new_gtf:
