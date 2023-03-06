@@ -67,7 +67,7 @@ $(BEDTOOLS):
 	if [ -z ${shell which ${BEDTOOLS}} ]; then \
 		if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi; \
 		if [ ! -f ${BIN_DIR}/${BEDTOOLS} ]; then \
-		wget https://github.com/arq5x/bedtools2/releases/download/v${BEDTOOLS_VERSION}/bedtools-${BEDTOOLS_VERSION}.tar.gz \
+		wget https://github.com/arq5x/bedtools2/releases/download/v${BEDTOOLS_VERSION}/bedtools-${BEDTOOLS_VERSION}.tar.gz; \
 		tar -zxvf bedtools-${BEDTOOLS_VERSION}.tar.gz; \
 		cd bedtools2; make; \
 		cp ${BEDTOOLS} ../${BIN_DIR}; cd .. ; \
