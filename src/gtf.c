@@ -37,7 +37,9 @@ int add_exon(trans_t *t, int tid, int start, int end, uint8_t is_rev)
 int trans_exon_comp(const void *_a, const void *_b)
 {
     exon_t *a = (exon_t*)_a, *b = (exon_t*)_b;
-    if (a->is_rev != b->is_rev) err_fatal_simple("Strands of exons do NOT match.\n");
+    if (a->is_rev != b->is_rev) {
+        err_fatal_simple("Strands of exons do NOT match.\n");
+    }
     if (a->start != b->start) return a->start - b->start;
     else return a->end - b->end;
 }
@@ -469,7 +471,7 @@ int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
     FILE *fp = err_xopen_core(__func__, fn, "r");
     char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], gname[1024], gid[1024], trans_name[1024], trans_id[1024], tag[20];
     trans_t *t = trans_init(1);
-    char last_tname[100]="\0", last_gname[100]="\0";
+    char last_tid[100]="\0", last_gid[100]="\0";
 
     while (fgets(line, 1024, fp) != NULL) {
         if (line[0] == '#') continue;
@@ -490,8 +492,8 @@ int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
         if (strcmp(trans_id, "\0") == 0) strcpy(trans_id, trans_name);
         else if (strcmp(trans_name, "\0") == 0) strcpy(trans_name, trans_id);
 
-        T->gene_n += ((strcmp(gname, last_gname) != 0) ? 1 : 0); // new gene
-        if (strcmp(trans_name, last_tname) != 0) { // new trans
+        T->gene_n += ((strcmp(gid, last_gid) != 0) ? 1 : 0); // new gene
+        if (strcmp(trans_id, last_tid) != 0) { // new trans
             if (t->exon_n >= 1) {
                 set_trans_name(t, NULL, NULL, NULL, NULL);
                 add_anno_trans(T, *t);
@@ -502,7 +504,7 @@ int read_anno_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
             t->exon_n = 0; t->tid = tid; t->is_rev = is_rev; t->start = start; t->end = end;
             strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id); strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
 
-            strcpy(last_tname, trans_name); strcpy(last_gname, gname);
+            strcpy(last_tid, trans_id); strcpy(last_gid, gid);
         }
         add_exon(t, tid, start, end, is_rev);
         if (start < t->start) t->start = start;
@@ -525,7 +527,7 @@ int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
     FILE *fp = err_xopen_core(__func__, fn, "r");
     char line[1024], ref[100]="\0", type[20]="\0"; int start, end; char strand, add_info[1024], gname[1024], gid[1024], trans_name[1024], trans_id[1024], tag[20];
     trans_t *t = trans_init(1);
-    char last_tname[100]="\0", last_gname[100]="\0";
+    char last_tid[100]="\0", last_gid[100]="\0";
 
     while (fgets(line, 1024, fp) != NULL) {
         sscanf(line, "%s\t%*s\t%s\t%d\t%d\t%*s\t%c\t%*s\t%[^\n]", ref, type, &start, &end, &strand, add_info);
@@ -548,8 +550,8 @@ int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
         if (strcmp(trans_id, "\0") == 0) strcpy(trans_id, trans_name);
         else if (strcmp(trans_name, "\0") == 0) strcpy(trans_name, trans_id);
 
-        T->gene_n += ((strcmp(gname, last_gname) != 0) ? 1 : 0); // new gene
-        if (strcmp(trans_name, last_tname) != 0) { // new trans
+        T->gene_n += ((strcmp(gname, last_gid) != 0) ? 1 : 0); // new gene
+        if (strcmp(trans_id, last_tid) != 0) { // new trans
             if (t->exon_n >= 1) {
                 // for bam_trans
                 t->full = 0, t->lfull = 0, t->lnoth = 1, t->rfull = 0, t->rnoth = 1;
@@ -568,7 +570,7 @@ int read_gtf_trans(char *fn, bam_hdr_t *h, read_trans_t *T)
             t->exon_n = 0; t->tid = tid; t->is_rev = is_rev; t->start = start; t->end = end;
             strcpy(t->trans_name, trans_name); strcpy(t->trans_id, trans_id); strcpy(t->gene_name, gname); strcpy(t->gene_id, gid);
 
-            strcpy(last_tname, trans_name); strcpy(last_gname, gname);
+            strcpy(last_tid, trans_id); strcpy(last_gid, gname);
         }
         add_exon(t, tid, start, end, is_rev);
         if (start < t->start) t->start = start;
