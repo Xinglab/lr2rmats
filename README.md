@@ -1,4 +1,7 @@
 # lr2rmats: Long read to rMATS
+
+**Note:** rMATS-long (https://github.com/Xinglab/rMATS-long) is recommended for long-read RNA-seq analysis
+
 ## <a name="lr2rmats"></a>What is lr2rmats ?
 lr2rmats is a [Snakemake](https://snakemake.readthedocs.io/en/stable/)-based light-weight pipeline which is designed to utilize both third-generation long-read and second-generation short-read RNA-seq data to generate an enhanced gene annotation file. The newly generated annotation file could be provided to [rMATS](http://rnaseq-mats.sourceforge.net/) for differential alternative splicing analysis.
 ![lr2rmats](https://github.com/Xinglab/lr2rmats/blob/master/lr2rmats.png)
